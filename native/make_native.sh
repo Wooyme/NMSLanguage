@@ -5,6 +5,7 @@ if [[ $SL_BUILD_NATIVE == "false" ]]; then
     exit 0
 fi
 "$JAVA_HOME"/bin/native-image \
+    -H:EnableURLProtocols=http \
     --macro:truffle --no-fallback --initialize-at-build-time \
     -cp ../language/target/simplelanguage.jar:../launcher/target/launcher-19.2.0-SNAPSHOT.jar \
     com.oracle.truffle.sl.launcher.SLMain \

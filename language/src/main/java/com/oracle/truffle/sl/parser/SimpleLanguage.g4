@@ -281,7 +281,6 @@ single_factor returns [SLExpressionNode result]
 |
     factor  {$result = $factor.result; }
 )
-
 ;
 
 factor returns [SLExpressionNode result]
@@ -383,7 +382,7 @@ fragment HEX_DIGIT : [0-9] | [a-f] | [A-F];
 fragment OCT_DIGIT : [0-7];
 fragment BINARY_DIGIT : '0' | '1';
 fragment TAB : '\t';
-fragment STRING_CHAR : '\\"'| '\\n' | '\\t' | '\\r' | ~( '\\' |'"' | '\r' | '\n');
+fragment STRING_CHAR : '\\\\' | '\\"'| '\\n' | '\\t' | '\\r' | ~( '\\' | '"' | '\r' | '\n');
 
 LOGICAL_LITERAL : 'true' | 'false';
 IDENTIFIER : LETTER (LETTER | DIGIT)*;
