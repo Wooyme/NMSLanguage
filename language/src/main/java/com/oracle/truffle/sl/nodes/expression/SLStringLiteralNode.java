@@ -44,16 +44,48 @@ import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 
+import java.util.HashMap;
+
 /**
  * Constant literal for a String value.
  */
 @NodeInfo(shortName = "const")
 public final class SLStringLiteralNode extends SLExpressionNode {
-
+    private static HashMap<Character,Character> specialCharMap = new HashMap<>();
+    static {
+        specialCharMap.put('n','\n');
+        specialCharMap.put('r','\r');
+        specialCharMap.put('t','\t');
+        specialCharMap.put('"','"');
+    }
     private final String value;
 
     public SLStringLiteralNode(String value) {
-        this.value = value;
+        char[] chars = value.toCharArray();
+        StringBuilder sb = new StringBuilder();
+        int status = 0;
+        for (char aChar : chars) {
+            if (aChar == '\\') {
+                if (status == 0)
+                    status = 1;
+                else {
+                    status = 0;
+                    sb.append('\\');
+                }
+            } else {
+                if (status == 1) {
+                    if (specialCharMap.containsKey(aChar)) {
+                        sb.append(specialCharMap.get(aChar));
+                        status = 0;
+                    } else {
+                        throw new RuntimeException("Failed to parse string");
+                    }
+                } else {
+                    sb.append(aChar);
+                }
+            }
+        }
+        this.value = sb.toString();
     }
 
     @Override

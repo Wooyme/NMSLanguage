@@ -46,10 +46,7 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.GenerateUncached;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.TruffleObject;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
@@ -76,6 +73,17 @@ public final class SLObjectType extends ObjectType {
     }
 
     @ExportMessage
+    static boolean isInstantiable(DynamicObject receiver) {
+        return true;
+    }
+
+    @ExportMessage
+    static Object instantiate(DynamicObject receiver, Object... arguments) throws UnsupportedTypeException, ArityException, UnsupportedMessageException {
+        return receiver.copy(receiver.getShape());
+    }
+
+    @ExportMessage static boolean hasArrayElements(DynamicObject receiver) { return false; }
+    @ExportMessage
     @SuppressWarnings("unused")
     static boolean hasMembers(DynamicObject receiver) {
         return true;
@@ -88,6 +96,14 @@ public final class SLObjectType extends ObjectType {
         } else {
             throw UnknownIdentifierException.create(member);
         }
+    }
+
+    @ExportMessage static Object readArrayElement(DynamicObject receiver, long index) throws UnsupportedMessageException, InvalidArrayIndexException { return null; }
+    @ExportMessage static boolean isArrayElementReadable(DynamicObject receiver, long index) { return false; }
+
+    @ExportMessage
+    static long getArraySize(DynamicObject receiver) {
+        return receiver.size();
     }
 
     @ExportMessage
@@ -218,6 +234,7 @@ public final class SLObjectType extends ObjectType {
             Object result = receiver.get(name);
             if (result == null) {
                 /* Property does not exist. */
+
                 throw UnknownIdentifierException.create(name);
             }
             return result;

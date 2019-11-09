@@ -77,6 +77,15 @@ public final class SLFunctionRegistry {
         return result;
     }
 
+    public SLFunction lookupWithContext(String name,boolean createIfNotPresent,Object ctx){
+        SLFunction result = functionsObject.functions.get(name);
+        if (result == null && createIfNotPresent) {
+            result = new SLFunction(language, name,ctx);
+            functionsObject.functions.put(name, result);
+        }
+        return result;
+    }
+
     /**
      * Associates the {@link SLFunction} with the given name with the given implementation root
      * node. If the function did not exist before, it defines the function. If the function existed
@@ -84,6 +93,12 @@ public final class SLFunctionRegistry {
      */
     public SLFunction register(String name, RootCallTarget callTarget) {
         SLFunction function = lookup(name, true);
+        function.setCallTarget(callTarget);
+        return function;
+    }
+
+    public SLFunction registerLambda(String name,RootCallTarget callTarget,Object ctx){
+        SLFunction function = lookupWithContext(name,true, ctx);
         function.setCallTarget(callTarget);
         return function;
     }

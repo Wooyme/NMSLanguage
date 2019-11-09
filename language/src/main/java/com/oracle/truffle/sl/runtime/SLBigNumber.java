@@ -40,14 +40,14 @@
  */
 package com.oracle.truffle.sl.runtime;
 
-import java.math.BigInteger;
-
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.TruffleObject;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.library.ExportLibrary;
 import com.oracle.truffle.api.library.ExportMessage;
+
+import java.math.BigDecimal;
 
 @ExportLibrary(InteropLibrary.class)
 public final class SLBigNumber implements TruffleObject, Comparable<SLBigNumber> {
@@ -63,17 +63,17 @@ public final class SLBigNumber implements TruffleObject, Comparable<SLBigNumber>
         return i >= -INT_MAX_SAFE_FLOAT && i <= INT_MAX_SAFE_FLOAT;
     }
 
-    private final BigInteger value;
+    private final BigDecimal value;
 
-    public SLBigNumber(BigInteger value) {
+    public SLBigNumber(BigDecimal value) {
         this.value = value;
     }
 
     public SLBigNumber(long value) {
-        this.value = BigInteger.valueOf(value);
+        this.value = BigDecimal.valueOf(value);
     }
 
-    public BigInteger getValue() {
+    public BigDecimal getValue() {
         return value;
     }
 
@@ -111,13 +111,13 @@ public final class SLBigNumber implements TruffleObject, Comparable<SLBigNumber>
     @ExportMessage
     @TruffleBoundary
     boolean fitsInByte() {
-        return value.bitLength() < 8;
+        return value.toBigInteger().bitLength() < 8;
     }
 
     @ExportMessage
     @TruffleBoundary
     boolean fitsInShort() {
-        return value.bitLength() < 16;
+        return value.toBigInteger().bitLength() < 16;
     }
 
     @ExportMessage
@@ -129,13 +129,13 @@ public final class SLBigNumber implements TruffleObject, Comparable<SLBigNumber>
     @ExportMessage
     @TruffleBoundary
     boolean fitsInLong() {
-        return value.bitLength() < 64;
+        return value.toBigInteger().bitLength() < 64;
     }
 
     @ExportMessage
     @TruffleBoundary
     boolean fitsInInt() {
-        return value.bitLength() < 32;
+        return value.toBigInteger().bitLength() < 32;
     }
 
     @ExportMessage

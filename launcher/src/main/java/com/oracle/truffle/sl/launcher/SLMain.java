@@ -61,6 +61,7 @@ public final class SLMain {
      * The main entry point.
      */
     public static void main(String[] args) throws IOException {
+        Source builtin;
         Source source;
         Map<String, String> options = new HashMap<>();
         String file = null;
@@ -73,7 +74,7 @@ public final class SLMain {
                 }
             }
         }
-
+        builtin = Source.newBuilder(SL,new File("language/builtin/lib.sl")).build();
         if (file == null) {
             // @formatter:off
             source = Source.newBuilder(SL, new InputStreamReader(System.in), "<stdin>").build();
@@ -82,10 +83,10 @@ public final class SLMain {
             source = Source.newBuilder(SL, new File(file)).build();
         }
 
-        System.exit(executeSource(source, System.in, System.out, options));
+        System.exit(executeSource(source,builtin, System.in, System.out, options));
     }
 
-    private static int executeSource(Source source, InputStream in, PrintStream out, Map<String, String> options) {
+    private static int executeSource(Source source,Source builtin, InputStream in, PrintStream out, Map<String, String> options) {
         Context context;
         PrintStream err = System.err;
         try {
@@ -97,6 +98,7 @@ public final class SLMain {
         out.println("== running on " + context.getEngine());
 
         try {
+            context.eval(builtin);
             Value result = context.eval(source);
             if (context.getBindings(SL).getMember("main") == null) {
                 err.println("No function main() defined in SL source file.");

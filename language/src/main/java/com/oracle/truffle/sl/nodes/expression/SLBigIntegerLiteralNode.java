@@ -40,6 +40,7 @@
  */
 package com.oracle.truffle.sl.nodes.expression;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
@@ -56,7 +57,7 @@ public final class SLBigIntegerLiteralNode extends SLExpressionNode {
 
     private final SLBigNumber value;
 
-    public SLBigIntegerLiteralNode(BigInteger value) {
+    public SLBigIntegerLiteralNode(BigDecimal value) {
         this.value = new SLBigNumber(value);
     }
 

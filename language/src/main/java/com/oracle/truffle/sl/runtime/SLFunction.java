@@ -40,6 +40,7 @@
  */
 package com.oracle.truffle.sl.runtime;
 
+import java.util.ArrayList;
 import java.util.logging.Level;
 
 import com.oracle.truffle.api.Assumption;
@@ -96,11 +97,18 @@ public final class SLFunction implements TruffleObject {
      * one gets invalidated.
      */
     private final CyclicAssumption callTargetStable;
-
+    private final Object ctx;
     protected SLFunction(SLLanguage language, String name) {
         this.name = name;
         this.callTarget = Truffle.getRuntime().createCallTarget(new SLUndefinedFunctionRootNode(language, name));
         this.callTargetStable = new CyclicAssumption(name);
+        this.ctx = null;
+    }
+    protected SLFunction(SLLanguage language,String name,Object ctx){
+        this.name = name;
+        this.callTarget = Truffle.getRuntime().createCallTarget(new SLUndefinedFunctionRootNode(language, name));
+        this.callTargetStable = new CyclicAssumption(name);
+        this.ctx = ctx;
     }
 
     public String getName() {
@@ -151,6 +159,10 @@ public final class SLFunction implements TruffleObject {
         return true;
     }
 
+    public Object getCtx() {
+        return ctx;
+    }
+
     /**
      * We allow languages to execute this function. We implement the interop execute message that
      * forwards to a function dispatch.
@@ -192,7 +204,7 @@ public final class SLFunction implements TruffleObject {
          * @see Specialization
          *
          * @param function the dynamically provided function
-         * @param cachedFunction the cached function of the specialization instance
+         * @param cachedTarget the cached function of the specialization instance
          * @param callNode the {@link DirectCallNode} specifically created for the
          *            {@link CallTarget} in cachedFunction.
          */
@@ -206,7 +218,15 @@ public final class SLFunction implements TruffleObject {
                         @Cached("create(cachedTarget)") DirectCallNode callNode) {
 
             /* Inline cache hit, we are safe to execute the cached call target. */
-            Object returnValue = callNode.call(arguments);
+            Object returnValue;
+            if(function.getCtx()==null){
+                returnValue = callNode.call(arguments);
+            }else{
+                Object[] argWithCtx = new Object[arguments.length+1];
+                argWithCtx[0] = function.getCtx();
+                System.arraycopy(arguments, 0, argWithCtx, 1, arguments.length);
+                returnValue = callNode.call(argWithCtx);
+            }
             return returnValue;
         }
 
@@ -222,7 +242,15 @@ public final class SLFunction implements TruffleObject {
              * SL has a quite simple call lookup: just ask the function for the current call target,
              * and call it.
              */
-            return callNode.call(function.getCallTarget(), arguments);
+            if(function.getCtx()==null){
+                return callNode.call(function.getCallTarget(), arguments);
+            }else{
+                Object[] argWithCtx = new Object[arguments.length+1];
+                argWithCtx[0] = function.getCtx();
+                System.arraycopy(arguments, 0, argWithCtx, 1, arguments.length);
+                return callNode.call(function.getCallTarget(), argWithCtx);
+            }
+
         }
     }
 

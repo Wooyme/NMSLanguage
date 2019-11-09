@@ -55,6 +55,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
@@ -737,7 +738,7 @@ public class SLInstrumentTest {
         assertEquals(100001L, ret.asLong());
 
         earlyReturn.fceCode = "fce(a)";
-        earlyReturn.returnValue = new BigInteger("-42");
+        earlyReturn.returnValue = new BigDecimal("-42");
         boolean interopFailure;
         try {
             context.eval(source);
@@ -747,7 +748,7 @@ public class SLInstrumentTest {
         }
         assertTrue(interopFailure);
 
-        earlyReturn.returnValue = new SLBigNumber(new BigInteger("-42"));
+        earlyReturn.returnValue = new SLBigNumber(new BigDecimal("-42"));
         ret = context.eval(source);
         assertTrue(ret.isNumber());
         assertEquals(-41L, ret.asLong());

@@ -40,6 +40,7 @@
  */
 package com.oracle.truffle.sl.nodes;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -92,6 +93,6 @@ public abstract class SLTypes {
     @ImplicitCast
     @TruffleBoundary
     public static SLBigNumber castBigNumber(long value) {
-        return new SLBigNumber(BigInteger.valueOf(value));
+        return new SLBigNumber(BigDecimal.valueOf(value));
     }
 }

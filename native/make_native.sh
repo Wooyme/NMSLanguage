@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+SL_BUILD_NATIVE="false"
 if [[ $SL_BUILD_NATIVE == "false" ]]; then
     echo "Skipping the native image build because SL_BUILD_NATIVE is set to false."
     exit 0

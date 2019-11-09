@@ -40,15 +40,6 @@
  */
 package com.oracle.truffle.sl.parser;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import org.antlr.v4.runtime.Parser;
-import org.antlr.v4.runtime.Token;
-
 import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.Truffle;
 import com.oracle.truffle.api.frame.FrameDescriptor;
@@ -60,40 +51,16 @@ import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.SLRootNode;
 import com.oracle.truffle.sl.nodes.SLStatementNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLBlockNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLBreakNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLContinueNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLDebuggerNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLFunctionBodyNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLIfNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLReturnNode;
-import com.oracle.truffle.sl.nodes.controlflow.SLWhileNode;
-import com.oracle.truffle.sl.nodes.expression.SLAddNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLBigIntegerLiteralNode;
-import com.oracle.truffle.sl.nodes.expression.SLDivNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLEqualNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLFunctionLiteralNode;
-import com.oracle.truffle.sl.nodes.expression.SLInvokeNode;
-import com.oracle.truffle.sl.nodes.expression.SLLessOrEqualNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLLessThanNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLLogicalAndNode;
-import com.oracle.truffle.sl.nodes.expression.SLLogicalNotNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLLogicalOrNode;
-import com.oracle.truffle.sl.nodes.expression.SLLongLiteralNode;
-import com.oracle.truffle.sl.nodes.expression.SLMulNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLParenExpressionNode;
-import com.oracle.truffle.sl.nodes.expression.SLReadPropertyNode;
-import com.oracle.truffle.sl.nodes.expression.SLReadPropertyNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLStringLiteralNode;
-import com.oracle.truffle.sl.nodes.expression.SLSubNodeGen;
-import com.oracle.truffle.sl.nodes.expression.SLWritePropertyNode;
-import com.oracle.truffle.sl.nodes.expression.SLWritePropertyNodeGen;
-import com.oracle.truffle.sl.nodes.local.SLReadArgumentNode;
-import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNode;
-import com.oracle.truffle.sl.nodes.local.SLReadLocalVariableNodeGen;
-import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
-import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNodeGen;
+import com.oracle.truffle.sl.nodes.controlflow.*;
+import com.oracle.truffle.sl.nodes.expression.*;
+import com.oracle.truffle.sl.nodes.local.*;
 import com.oracle.truffle.sl.nodes.util.SLUnboxNodeGen;
+import org.antlr.v4.runtime.Parser;
+import org.antlr.v4.runtime.Token;
+
+import java.math.BigDecimal;
+import java.nio.charset.Charset;
+import java.util.*;
 
 /**
  * Helper class used by the SL {@link Parser} to create nodes. The code is factored out of the
@@ -130,7 +97,9 @@ public class SLNodeFactory {
     private int parameterCount;
     private FrameDescriptor frameDescriptor;
     private List<SLStatementNode> methodNodes;
-
+    /* State while parsing a lambda */
+    private HashSet<String> anonymousFunctions = new HashSet<>();
+    private SLExpressionNode context;
     /* State while parsing a block. */
     private LexicalScope lexicalScope;
     private final SLLanguage language;
@@ -158,7 +127,37 @@ public class SLNodeFactory {
         functionBodyStartPos = bodyStartToken.getStartIndex();
         frameDescriptor = new FrameDescriptor();
         methodNodes = new ArrayList<>();
+        this.context = createContext();
         startBlock();
+    }
+
+    public HashMap<String,Object> startLambda(Token bodyStartToken){
+        HashMap<String,Object> oldEnv = new HashMap<>();
+        oldEnv.put("functionStartPos",functionStartPos);
+        oldEnv.put("functionName",functionName);
+        oldEnv.put("functionBodyStartPos",functionBodyStartPos);
+        oldEnv.put("frameDescriptor",frameDescriptor);
+        oldEnv.put("parameterCount",parameterCount);
+        oldEnv.put("lexicalScope",lexicalScope);
+        oldEnv.put("methodNodes",methodNodes);
+        oldEnv.put("context",context);
+        parameterCount = 0;
+//        lexicalScope = null;
+        functionStartPos = functionBodyStartPos = bodyStartToken.getStartIndex();
+        byte[] array = new byte[8]; // length is bounded by 7
+        new Random().nextBytes(array);
+        array[0]='@';
+        String name = new String(array, Charset.forName("UTF-8"));
+        while(anonymousFunctions.contains(name)){
+            name = new String(array, Charset.forName("UTF-8"));
+        }
+        anonymousFunctions.add(name);
+        functionName = name;
+        frameDescriptor = new FrameDescriptor();
+        methodNodes = new ArrayList<>();
+        this.context = createContext();
+        startBlock();
+        return oldEnv;
     }
 
     public void addFormalParameter(Token nameToken) {
@@ -172,8 +171,11 @@ public class SLNodeFactory {
         methodNodes.add(assignment);
         parameterCount++;
     }
-
-    public void finishFunction(SLStatementNode bodyNode) {
+    public void finishFunction(SLStatementNode bodyNode){
+        finishFunction(bodyNode,null);
+    }
+    public SLFunctionLiteralNode finishFunction(SLStatementNode bodyNode,HashMap<String,Object> oldEnv) {
+        SLFunctionLiteralNode functionNode = null;
         if (bodyNode == null) {
             // a state update that would otherwise be performed by finishBlock
             lexicalScope = lexicalScope.outer;
@@ -186,17 +188,34 @@ public class SLNodeFactory {
 
             final SLFunctionBodyNode functionBodyNode = new SLFunctionBodyNode(methodBlock);
             functionBodyNode.setSourceSection(functionSrc.getCharIndex(), functionSrc.getCharLength());
-
             final SLRootNode rootNode = new SLRootNode(language, frameDescriptor, functionBodyNode, functionSrc, functionName);
-            allFunctions.put(functionName, Truffle.getRuntime().createCallTarget(rootNode));
-        }
+            if(oldEnv==null) {
+                allFunctions.put(functionName, Truffle.getRuntime().createCallTarget(rootNode));
+                functionNode = new SLFunctionLiteralNode(language, functionName);
+            }else {
+                functionNode = new SLFunctionLiteralNode(language, functionName,Truffle.getRuntime().createCallTarget(rootNode), context);
+            }
 
-        functionStartPos = 0;
-        functionName = null;
-        functionBodyStartPos = 0;
-        parameterCount = 0;
-        frameDescriptor = null;
-        lexicalScope = null;
+        }
+        if(oldEnv==null) {
+            functionStartPos = 0;
+            functionName = null;
+            functionBodyStartPos = 0;
+            parameterCount = 0;
+            frameDescriptor = null;
+            lexicalScope = null;
+            context = null;
+        }else{
+            functionStartPos = (int)oldEnv.get("functionStartPos");
+            functionName = (String) oldEnv.get("functionName");
+            functionBodyStartPos = (int)oldEnv.get("functionBodyStartPos");
+            parameterCount = (int)oldEnv.get("parameterCount");
+            frameDescriptor = (FrameDescriptor)oldEnv.get("frameDescriptor");
+            lexicalScope = (LexicalScope)oldEnv.get("lexicalScope");
+            methodNodes = (List<SLStatementNode>)oldEnv.get("methodNodes");
+            context = (SLExpressionNode) oldEnv.get("context");
+        }
+        return functionNode;
     }
 
     public void startBlock() {
@@ -235,6 +254,7 @@ public class SLNodeFactory {
             }
         }
     }
+
 
     /**
      * Returns an {@link SLDebuggerNode} for the given token.
@@ -332,6 +352,21 @@ public class SLNodeFactory {
         return returnNode;
     }
 
+    public SLExpressionNode createContext(){
+        SLFunctionLiteralNode newObj = new SLFunctionLiteralNode(language, "new");
+        ArrayList<SLExpressionNode> parameters = new ArrayList<>();
+        if(this.context!=null) {
+            parameters.add(new SLReadArgumentNode(0));
+            this.parameterCount++;
+        }
+        FrameSlot frameSlot = frameDescriptor.findOrAddFrameSlot(
+                "context",
+                null,
+                FrameSlotKind.Illegal);
+        methodNodes.add(SLWriteLocalVariableNodeGen.create(this.createCall(newObj,null, parameters,null), frameSlot));
+        return SLReadLocalVariableNodeGen.create(frameSlot);
+    }
+
     /**
      * Returns the corresponding subclass of {@link SLExpressionNode} for binary expressions. </br>
      * These nodes are currently not instrumented.
@@ -399,6 +434,10 @@ public class SLNodeFactory {
         return result;
     }
 
+    public SLExpressionNode createNot(SLExpressionNode valueNode){
+        return SLLogicalNotNodeGen.create(valueNode);
+    }
+
     /**
      * Returns an {@link SLInvokeNode} for the given parameters.
      *
@@ -408,16 +447,19 @@ public class SLNodeFactory {
      * @return An SLInvokeNode for the given parameters. null if functionNode or any of the
      *         parameterNodes are null.
      */
-    public SLExpressionNode createCall(SLExpressionNode functionNode, List<SLExpressionNode> parameterNodes, Token finalToken) {
+    public SLExpressionNode createCall(SLExpressionNode functionNode,SLExpressionNode thisNode, List<SLExpressionNode> parameterNodes, Token finalToken) {
         if (functionNode == null || containsNull(parameterNodes)) {
             return null;
         }
-
+        if(thisNode!=null)
+            parameterNodes.add(0,thisNode);
         final SLExpressionNode result = new SLInvokeNode(functionNode, parameterNodes.toArray(new SLExpressionNode[parameterNodes.size()]));
 
         final int startPos = functionNode.getSourceCharIndex();
-        final int endPos = finalToken.getStartIndex() + finalToken.getText().length();
-        result.setSourceSection(startPos, endPos - startPos);
+        if(finalToken!=null) {
+            final int endPos = finalToken.getStartIndex() + finalToken.getText().length();
+            result.setSourceSection(startPos, endPos - startPos);
+        }
         result.addExpressionTag();
 
         return result;
@@ -453,8 +495,8 @@ public class SLNodeFactory {
                         argumentIndex,
                         FrameSlotKind.Illegal);
         lexicalScope.locals.put(name, frameSlot);
-        final SLExpressionNode result = SLWriteLocalVariableNodeGen.create(valueNode, frameSlot);
-
+//        final SLExpressionNode result = SLWriteLocalVariableNodeGen.create(valueNode, frameSlot);
+        final SLExpressionNode result = createWriteProperty(context,nameNode,valueNode);
         if (valueNode.hasSource()) {
             final int start = nameNode.getSourceCharIndex();
             final int length = valueNode.getSourceEndIndex() - start;
@@ -488,7 +530,8 @@ public class SLNodeFactory {
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
         if (frameSlot != null) {
             /* Read of a local variable. */
-            result = SLReadLocalVariableNodeGen.create(frameSlot);
+//            result = SLReadLocalVariableNodeGen.create(frameSlot);
+            result = createReadProperty(context,nameNode);
         } else {
             /* Read of a global name. In our language, the only global names are functions. */
             result = new SLFunctionLiteralNode(language, name);
@@ -512,6 +555,14 @@ public class SLNodeFactory {
         return result;
     }
 
+    public SLExpressionNode createLogicalLiteral(Token literalToken){
+        SLExpressionNode result;
+        result = new SLLogicalLiteralNode(Boolean.parseBoolean(literalToken.getText()));
+        srcFromToken(result, literalToken);
+        result.addExpressionTag();
+        return result;
+    }
+
     public SLExpressionNode createNumericLiteral(Token literalToken) {
         SLExpressionNode result;
         try {
@@ -519,7 +570,7 @@ public class SLNodeFactory {
             result = new SLLongLiteralNode(Long.parseLong(literalToken.getText()));
         } catch (NumberFormatException ex) {
             /* Overflow of long value, so fall back to BigInteger. */
-            result = new SLBigIntegerLiteralNode(new BigInteger(literalToken.getText()));
+            result = new SLBigIntegerLiteralNode(new BigDecimal(literalToken.getText()));
         }
         srcFromToken(result, literalToken);
         result.addExpressionTag();
@@ -550,10 +601,11 @@ public class SLNodeFactory {
         }
 
         final SLExpressionNode result = SLReadPropertyNodeGen.create(receiverNode, nameNode);
-
-        final int startPos = receiverNode.getSourceCharIndex();
-        final int endPos = nameNode.getSourceEndIndex();
-        result.setSourceSection(startPos, endPos - startPos);
+        if(receiverNode.hasSource()) {
+            final int startPos = receiverNode.getSourceCharIndex();
+            final int endPos = nameNode.getSourceEndIndex();
+            result.setSourceSection(startPos, endPos - startPos);
+        }
         result.addExpressionTag();
 
         return result;
@@ -574,10 +626,11 @@ public class SLNodeFactory {
         }
 
         final SLExpressionNode result = SLWritePropertyNodeGen.create(receiverNode, nameNode, valueNode);
-
-        final int start = receiverNode.getSourceCharIndex();
-        final int length = valueNode.getSourceEndIndex() - start;
-        result.setSourceSection(start, length);
+        if(receiverNode.hasSource()) {
+            final int start = receiverNode.getSourceCharIndex();
+            final int length = valueNode.getSourceEndIndex() - start;
+            result.setSourceSection(start, length);
+        }
         result.addExpressionTag();
 
         return result;

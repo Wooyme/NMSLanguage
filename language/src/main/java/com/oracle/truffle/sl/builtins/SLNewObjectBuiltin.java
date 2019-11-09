@@ -50,6 +50,7 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.runtime.SLContext;
 import com.oracle.truffle.sl.runtime.SLNull;
@@ -65,7 +66,8 @@ public abstract class SLNewObjectBuiltin extends SLBuiltinNode {
     @SuppressWarnings("unused")
     public Object newObject(SLNull o, @CachedContext(SLLanguage.class) SLContext context,
                     @Cached("context.getAllocationReporter()") AllocationReporter reporter) {
-        return context.createObject(reporter);
+        Object obj = context.createObject(reporter);
+        return obj;
     }
 
     @Specialization(guards = "!values.isNull(obj)", limit = "3")

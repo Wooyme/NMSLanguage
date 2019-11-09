@@ -42,6 +42,8 @@ package com.oracle.truffle.sl.builtins;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.URL;
 
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.CachedContext;
@@ -50,6 +52,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.SLException;
 import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.runtime.SLContext;
+import com.oracle.truffle.sl.runtime.SLNull;
 
 /**
  * Builtin function that reads a String from the {@link SLContext#getInput() standard input}.
@@ -57,16 +60,22 @@ import com.oracle.truffle.sl.runtime.SLContext;
 @NodeInfo(shortName = "readln")
 public abstract class SLReadlnBuiltin extends SLBuiltinNode {
 
+
     @Specialization
-    public String readln(@CachedContext(SLLanguage.class) SLContext context) {
-        String result = doRead(context.getInput());
+    public Object readln(Object fh,@CachedContext(SLLanguage.class) SLContext context) {
+
+        Object result;
+        if(fh!=null)
+            result= doRead((BufferedReader) fh);
+        else
+            result = doRead(context.getInput());
         if (result == null) {
             /*
              * We do not have a sophisticated end of file handling, so returning an empty string is
              * a reasonable alternative. Note that the Java null value should never be used, since
              * it can interfere with the specialization logic in generated source code.
              */
-            result = "";
+            result = SLNull.SINGLETON;
         }
         return result;
     }
@@ -79,4 +88,5 @@ public abstract class SLReadlnBuiltin extends SLBuiltinNode {
             throw new SLException(ex.getMessage(), this);
         }
     }
+
 }

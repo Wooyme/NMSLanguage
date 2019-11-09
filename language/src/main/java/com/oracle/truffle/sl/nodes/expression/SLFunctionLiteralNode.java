@@ -43,7 +43,10 @@ package com.oracle.truffle.sl.nodes.expression;
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.CompilationFinal;
+import com.oracle.truffle.api.RootCallTarget;
 import com.oracle.truffle.api.TruffleLanguage.ContextReference;
+import com.oracle.truffle.api.frame.FrameSlot;
+import com.oracle.truffle.api.frame.FrameSlotTypeException;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.SLLanguage;
@@ -58,7 +61,7 @@ import com.oracle.truffle.sl.runtime.SLFunctionRegistry;
  * call target} that is executed when calling the function, but the {@link SLFunction} for a name
  * never changes. This is guaranteed by the {@link SLFunctionRegistry}.
  */
-@NodeInfo(shortName = "func")
+@NodeInfo(shortName = "fn")
 public final class SLFunctionLiteralNode extends SLExpressionNode {
 
     /** The name of the function. */
@@ -73,10 +76,20 @@ public final class SLFunctionLiteralNode extends SLExpressionNode {
     @CompilationFinal private SLFunction cachedFunction;
 
     private final ContextReference<SLContext> reference;
-
+    private final SLExpressionNode context;
+    private final RootCallTarget callTarget;
     public SLFunctionLiteralNode(SLLanguage language, String functionName) {
         this.functionName = functionName;
         this.reference = language.getContextReference();
+        this.callTarget = null;
+        this.context = null;
+    }
+
+    public SLFunctionLiteralNode(SLLanguage language, String functionName, RootCallTarget callTarget, SLExpressionNode context){
+        this.functionName = functionName;
+        this.reference = language.getContextReference();
+        this.context = context;
+        this.callTarget = callTarget;
     }
 
     @Override
@@ -85,7 +98,12 @@ public final class SLFunctionLiteralNode extends SLExpressionNode {
             /* We are about to change a @CompilationFinal field. */
             CompilerDirectives.transferToInterpreterAndInvalidate();
             /* First execution of the node: lookup the function in the function registry. */
-            cachedFunction = reference.get().getFunctionRegistry().lookup(functionName, true);
+            if(this.context==null)
+                cachedFunction = reference.get().getFunctionRegistry().lookup(functionName, true);
+            else {
+                Object ctx = context.executeGeneric(frame);
+                cachedFunction = reference.get().getFunctionRegistry().registerLambda(functionName,callTarget,ctx);
+            }
         }
         return cachedFunction;
     }
