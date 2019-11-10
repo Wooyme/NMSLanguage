@@ -66,8 +66,7 @@ public abstract class SLNewObjectBuiltin extends SLBuiltinNode {
     @SuppressWarnings("unused")
     public Object newObject(SLNull o, @CachedContext(SLLanguage.class) SLContext context,
                     @Cached("context.getAllocationReporter()") AllocationReporter reporter) {
-        Object obj = context.createObject(reporter);
-        return obj;
+        return context.createObject(reporter);
     }
 
     @Specialization(guards = "!values.isNull(obj)", limit = "3")

@@ -195,7 +195,6 @@ public class SLNodeFactory {
             }else {
                 functionNode = new SLFunctionLiteralNode(language, functionName,Truffle.getRuntime().createCallTarget(rootNode), context);
             }
-
         }
         if(oldEnv==null) {
             functionStartPos = 0;
@@ -353,17 +352,18 @@ public class SLNodeFactory {
     }
 
     public SLExpressionNode createContext(){
-        SLFunctionLiteralNode newObj = new SLFunctionLiteralNode(language, "new");
-        ArrayList<SLExpressionNode> parameters = new ArrayList<>();
+        SLExpressionNode getContext;
         if(this.context!=null) {
-            parameters.add(new SLReadArgumentNode(0));
+            getContext = SLFromContextNodeGen.create(new SLReadArgumentNode(0));
             this.parameterCount++;
+        }else{
+            getContext = SLGetContextNodeGen.create();
         }
         FrameSlot frameSlot = frameDescriptor.findOrAddFrameSlot(
                 "context",
                 null,
                 FrameSlotKind.Illegal);
-        methodNodes.add(SLWriteLocalVariableNodeGen.create(this.createCall(newObj,null, parameters,null), frameSlot));
+        methodNodes.add(SLWriteLocalVariableNodeGen.create(getContext, frameSlot));
         return SLReadLocalVariableNodeGen.create(frameSlot);
     }
 
