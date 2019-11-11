@@ -18,11 +18,12 @@ public abstract class SLOpenBuiltin extends SLBuiltinNode {
     @Specialization
     public Object open(String path,String op,@CachedContext(SLLanguage.class) SLContext context) {
         Object result = null;
-
         switch (op) {
             case "<":
-                if (path.startsWith("file:") || path.startsWith("http://") || path.startsWith("https://"))
+                if (path.startsWith("file:") || path.startsWith("http:") || path.startsWith("https:"))
                     result = getReaderCommon(path);
+                if(path.startsWith("shell:"))
+                    result = getShell(path);
                 break;
             case ">":
                 if (path.startsWith("file:")) {
@@ -71,6 +72,18 @@ public abstract class SLOpenBuiltin extends SLBuiltinNode {
             }
             return new BufferedWriter(new FileWriter(new URL(path).getFile(),isAppend));
         } catch (IOException e) {
+            return SLNull.SINGLETON;
+        }
+    }
+
+    private Object getShell(String path){
+        String cmd = path.substring(6);
+        try {
+            final Process p = Runtime.getRuntime().exec(cmd);
+            BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+            p.waitFor();
+            return reader;
+        } catch (IOException | InterruptedException e) {
             return SLNull.SINGLETON;
         }
     }
