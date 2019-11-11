@@ -26,6 +26,26 @@ For instructions on how to get started please refer to [our website](http://www.
 6. add some Higher-order functions `forEach`,`map`,`from` in `lib.sl`
 7. add some interesting grammar
 
+## Builtins
+
+### new
+```
+a = new();
+a.a = "Hello";
+a["b"] = "World";
+a[0] = "!";
+```
+new()会生成一个object **NMSL不区分object，array和map**
+
+### open
+```
+// open(URL,Option);
+a = open("http://www.baidu.com","<");
+b = open("file:index.html",">+");
+c = open("shell:ls","<");
+```
+URL参数支持 `http` `https` `file` `shell` 关键字
+Option 包括 `<`,`>`,`<+`,`>+`,`>>+` `+`表示若文件不存在则创建，`>>`表示附加。
 ## Example
 ```
 fn main() {

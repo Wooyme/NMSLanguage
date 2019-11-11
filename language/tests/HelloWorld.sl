@@ -1,4 +1,7 @@
 fn main() {
-    shell = open("shell:ls","<");
-    shell from { line: println(line); };
+    a = new();
+    a.a = "Hello";
+    a["b"] = "World";
+    a[0] = "!";
+    a forEach { v,k: println("Key:"+k+",Value:"+v); };
 }
