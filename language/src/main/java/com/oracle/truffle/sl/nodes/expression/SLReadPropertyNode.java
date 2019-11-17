@@ -43,15 +43,20 @@ package com.oracle.truffle.sl.nodes.expression;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.sl.SLException;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.util.SLToMemberNode;
+import com.oracle.truffle.sl.runtime.SLNull;
+import com.oracle.truffle.sl.runtime.SLReflection;
 import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * The node for reading a property of an object. When executed, this node:
@@ -68,10 +73,41 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
 
     static final int LIBRARY_LIMIT = 3;
 
+    @Specialization(limit = "LIBRARY_LIMIT")
+    protected Object readArray(List receiver, Object index,
+                               @CachedLibrary("index") InteropLibrary numbers) {
+        try {
+            return receiver.get(numbers.asInt(index));
+        } catch (UnsupportedMessageException | IndexOutOfBoundsException e ) {
+            // read was not successful. In SL we only have basic support for errors.
+            throw SLUndefinedNameException.undefinedProperty(this, index);
+        }
+    }
+
+    @Specialization(limit = "LIBRARY_LIMIT")
+    protected Object readString(String receiver, Object index,
+                               @CachedLibrary("index") InteropLibrary numbers) {
+        try {
+            return new String(new char[]{receiver.toCharArray()[numbers.asInt(index)]});
+        } catch (UnsupportedMessageException | IndexOutOfBoundsException e ) {
+            // read was not successful. In SL we only have basic support for errors.
+            throw SLUndefinedNameException.undefinedProperty(this, index);
+        }
+    }
+
+    @Specialization(limit = "LIBRARY_LIMIT")
+    protected Object readObject(SLReflection obj,Object name,@Cached SLToMemberNode asMember){
+        try {
+            return obj.readProperty(asMember.execute(name));
+        } catch (IllegalAccessException | UnknownIdentifierException e) {
+            throw new SLException(e.getMessage(),this);
+        }
+    }
+
     @Specialization(guards = "arrays.hasArrayElements(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object writeArray(Object receiver, Object index,
-                    @CachedLibrary("receiver") InteropLibrary arrays,
-                    @CachedLibrary("index") InteropLibrary numbers) {
+    protected Object readArray(TruffleObject receiver, Object index,
+                               @CachedLibrary("receiver") InteropLibrary arrays,
+                               @CachedLibrary("index") InteropLibrary numbers) {
         try {
             return arrays.readArrayElement(receiver, numbers.asLong(index));
         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
@@ -81,7 +117,7 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     }
 
     @Specialization(guards = "objects.hasMembers(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object writeObject(Object receiver, Object name,
+    protected Object readObject(TruffleObject receiver, Object name,
                     @CachedLibrary("receiver") InteropLibrary objects,
                     @Cached SLToMemberNode asMember) {
         try {
@@ -91,5 +127,4 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
             throw SLUndefinedNameException.undefinedProperty(this, name);
         }
     }
-
 }

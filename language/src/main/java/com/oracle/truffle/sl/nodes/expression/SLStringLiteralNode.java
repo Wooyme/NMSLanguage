@@ -61,6 +61,7 @@ public final class SLStringLiteralNode extends SLExpressionNode {
     private final String value;
 
     public SLStringLiteralNode(String value) {
+        char[] tmp = new char[2];
         char[] chars = value.toCharArray();
         StringBuilder sb = new StringBuilder();
         int status = 0;
@@ -74,12 +75,24 @@ public final class SLStringLiteralNode extends SLExpressionNode {
                 }
             } else {
                 if (status == 1) {
-                    if (specialCharMap.containsKey(aChar)) {
+                    if(aChar == 'x'){
+                        status = 2;
+                    }else if (specialCharMap.containsKey(aChar)) {
                         sb.append(specialCharMap.get(aChar));
                         status = 0;
                     } else {
                         throw new RuntimeException("Failed to parse string");
                     }
+                }else if(status == 2){
+                    tmp[0] = aChar;
+                    status = 3;
+                } else if(status == 3){
+                    tmp[1] = aChar;
+                    int a1 = Character.digit(tmp[0],16);
+                    int a2 = Character.digit(tmp[1],16);
+                    char x = (char)(a1*16+a2);
+                    sb.append(x);
+                    status = 0;
                 } else {
                     sb.append(aChar);
                 }

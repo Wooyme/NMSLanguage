@@ -61,13 +61,11 @@ import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
  */
 @NodeInfo(shortName = "new")
 public abstract class SLNewObjectBuiltin extends SLBuiltinNode {
-
     @Specialization
-    @SuppressWarnings("unused")
-    public Object newObject(SLNull o, @CachedContext(SLLanguage.class) SLContext context,
-                    @Cached("context.getAllocationReporter()") AllocationReporter reporter) {
-        return context.createObject(reporter);
+    public Object newObject(Object... args){
+        return SLNull.SINGLETON;
     }
+
 
     @Specialization(guards = "!values.isNull(obj)", limit = "3")
     public Object newObject(Object obj, @CachedLibrary("obj") InteropLibrary values) {

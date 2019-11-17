@@ -58,6 +58,9 @@ import com.oracle.truffle.api.object.ObjectType;
 import com.oracle.truffle.api.object.Property;
 import com.oracle.truffle.api.object.Shape;
 
+import java.util.Arrays;
+import java.util.LinkedList;
+
 @ExportLibrary(value = InteropLibrary.class, receiverType = DynamicObject.class)
 public final class SLObjectType extends ObjectType {
 
@@ -66,7 +69,7 @@ public final class SLObjectType extends ObjectType {
 
     private SLObjectType() {
     }
-
+  
     @Override
     public Class<?> dispatch() {
         return SLObjectType.class;
@@ -111,16 +114,16 @@ public final class SLObjectType extends ObjectType {
     static class GetMembers {
 
         @Specialization(guards = "receiver.getShape() == cachedShape")
-        static Keys doCached(DynamicObject receiver, boolean includeInternal, //
-                        @Cached("receiver.getShape()") Shape cachedShape, //
-                        @Cached(value = "doGeneric(receiver, includeInternal)", allowUncached = true) Keys cachedKeys) {
+        static LinkedList doCached(DynamicObject receiver, boolean includeInternal, //
+                                   @Cached("receiver.getShape()") Shape cachedShape, //
+                                   @Cached(value = "doGeneric(receiver, includeInternal)", allowUncached = true) LinkedList cachedKeys) {
             return cachedKeys;
         }
 
         @Specialization(replaces = "doCached")
         @TruffleBoundary
-        static Keys doGeneric(DynamicObject receiver, boolean includeInternal) {
-            return new Keys(receiver.getShape().getKeyList().toArray());
+        static LinkedList doGeneric(DynamicObject receiver, boolean includeInternal) {
+            return new LinkedList<>(receiver.getShape().getKeyList());
         }
     }
 
@@ -157,39 +160,39 @@ public final class SLObjectType extends ObjectType {
         return shape != null && shape.check(receiver);
     }
 
-    @ExportLibrary(InteropLibrary.class)
-    static final class Keys implements TruffleObject {
-
-        private final Object[] keys;
-
-        Keys(Object[] keys) {
-            this.keys = keys;
-        }
-
-        @ExportMessage
-        Object readArrayElement(long index) throws InvalidArrayIndexException {
-            if (!isArrayElementReadable(index)) {
-                throw InvalidArrayIndexException.create(index);
-            }
-            return keys[(int) index];
-        }
-
-        @SuppressWarnings("static-method")
-        @ExportMessage
-        boolean hasArrayElements() {
-            return true;
-        }
-
-        @ExportMessage
-        long getArraySize() {
-            return keys.length;
-        }
-
-        @ExportMessage
-        boolean isArrayElementReadable(long index) {
-            return index >= 0 && index < keys.length;
-        }
-    }
+//    @ExportLibrary(InteropLibrary.class)
+//    static final class Keys implements TruffleObject {
+//
+//        private final Object[] keys;
+//
+//        Keys(Object[] keys) {
+//            this.keys = keys;
+//        }
+//
+//        @ExportMessage
+//        Object readArrayElement(long index) throws InvalidArrayIndexException {
+//            if (!isArrayElementReadable(index)) {
+//                throw InvalidArrayIndexException.create(index);
+//            }
+//            return keys[(int) index];
+//        }
+//
+//        @SuppressWarnings("static-method")
+//        @ExportMessage
+//        boolean hasArrayElements() {
+//            return true;
+//        }
+//
+//        @ExportMessage
+//        long getArraySize() {
+//            return keys.length;
+//        }
+//
+//        @ExportMessage
+//        boolean isArrayElementReadable(long index) {
+//            return index >= 0 && index < keys.length;
+//        }
+//    }
 
     @GenerateUncached
     @ExportMessage

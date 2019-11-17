@@ -52,14 +52,15 @@ import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.runtime.SLFunction;
+import com.oracle.truffle.sl.runtime.SLReflection;
 import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
+
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * The node for function invocation in SL. Since SL has first class functions, the {@link SLFunction
  * target function} can be computed by an arbitrary expression. This node is responsible for
- * evaluating this expression, as well as evaluating the {@link #argumentNodes arguments}. The
- * actual dispatch is then delegated to a chain of {@link SLDispatchNode} that form a polymorphic
- * inline cache.
+ * evaluating this expression, as well as evaluating the {@link #argumentNodes arguments}.
  */
 @NodeInfo(shortName = "invoke")
 public final class SLInvokeNode extends SLExpressionNode {
@@ -78,7 +79,6 @@ public final class SLInvokeNode extends SLExpressionNode {
     @Override
     public Object executeGeneric(VirtualFrame frame) {
         Object function = functionNode.executeGeneric(frame);
-
         /*
          * The number of arguments is constant for one invoke node. During compilation, the loop is
          * unrolled and the execute methods of all arguments are inlined. This is triggered by the
@@ -91,12 +91,26 @@ public final class SLInvokeNode extends SLExpressionNode {
         for (int i = 0; i < argumentNodes.length; i++) {
             argumentValues[i] = argumentNodes[i].executeGeneric(frame);
         }
+        if(function instanceof Class){
+            try {
+                return new SLReflection((Class) function,argumentValues);
+            } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
+                throw SLUndefinedNameException.undefinedFunction(this, function);
+            }
+        }else if(function instanceof SLReflection.SLReflectionMethod){
+            try {
+                return ((SLReflection.SLReflectionMethod) function).invoke(argumentValues);
+            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
+                throw SLUndefinedNameException.undefinedFunction(this, function);
+            }
+        }else{
+            try {
+                return library.execute(function, argumentValues);
+            } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
+                /* Execute was not successful. */
+                throw SLUndefinedNameException.undefinedFunction(this, function);
+            }
 
-        try {
-            return library.execute(function, argumentValues);
-        } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
-            /* Execute was not successful. */
-            throw SLUndefinedNameException.undefinedFunction(this, function);
         }
     }
 

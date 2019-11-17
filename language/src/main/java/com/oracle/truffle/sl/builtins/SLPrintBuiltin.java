@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015, 2018, Oracle and/or its affiliates. All rights reserved.
+ * Copyright (c) 2012, 2018, Oracle and/or its affiliates. All rights reserved.
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
  *
  * The Universal Permissive License (UPL), Version 1.0
@@ -40,35 +40,72 @@
  */
 package com.oracle.truffle.sl.builtins;
 
+import java.io.PrintWriter;
+
+import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
-import com.oracle.truffle.sl.SLException;
 import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.runtime.SLContext;
-import com.oracle.truffle.sl.runtime.SLNull;
 
 /**
- * Built-in function that goes through to import a symbol from the polyglot bindings.
+ * Builtin function to write a value to the {@link SLContext#getOutput() standard output}. The
+ * different specialization leverage the typed {@code println} methods available in Java, i.e.,
+ * primitive values are printed without converting them to a {@link String} first.
+ * <p>
+ * Printing involves a lot of Java code, so we need to tell the optimizing system that it should not
+ * unconditionally inline everything reachable from the println() method. This is done via the
+ * {@link TruffleBoundary} annotations.
  */
-@NodeInfo(shortName = "import")
-public abstract class SLImportBuiltin extends SLBuiltinNode {
+@NodeInfo(shortName = "print")
+public abstract class SLPrintBuiltin extends SLBuiltinNode {
 
     @Specialization
-    public Object importSymbol(String symbol,
-                    @CachedLibrary(limit = "3") InteropLibrary arrays,
-                    @CachedContext(SLLanguage.class) SLContext context) {
-        try {
-            return arrays.readMember(context.getPolyglotBindings(), symbol);
-        } catch (UnsupportedMessageException | UnknownIdentifierException e) {
-            return SLNull.SINGLETON;
-        } catch (SecurityException e) {
-            throw new SLException("No polyglot access allowed.", this);
-        }
+    public long print(long value, @CachedContext(SLLanguage.class) SLContext context) {
+        doPrint(context.getOutput(), value);
+        return value;
     }
 
+    @TruffleBoundary
+    private static void doPrint(PrintWriter out, long value) {
+        out.print(value);
+        out.flush();
+    }
+
+    @Specialization
+    public boolean print(boolean value, @CachedContext(SLLanguage.class) SLContext context) {
+        doPrint(context.getOutput(), value);
+        return value;
+    }
+
+    @TruffleBoundary
+    private static void doPrint(PrintWriter out, boolean value) {
+        out.print(value);
+        out.flush();
+    }
+
+    @Specialization
+    public String print(String value, @CachedContext(SLLanguage.class) SLContext context) {
+        doPrint(context.getOutput(), value);
+        return value;
+    }
+
+    @TruffleBoundary
+    private static void doPrint(PrintWriter out, String value) {
+        out.print(value);
+        out.flush();
+    }
+
+    @Specialization
+    public Object println(Object value, @CachedContext(SLLanguage.class) SLContext context) {
+        doPrint(context.getOutput(), value);
+        return value;
+    }
+
+    @TruffleBoundary
+    private static void doPrint(PrintWriter out, Object value) {
+        out.print(value);
+        out.flush();
+    }
 }

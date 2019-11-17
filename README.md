@@ -20,11 +20,12 @@ For instructions on how to get started please refer to [our website](http://www.
 
 1. Integer -> Decimal
 2. add `\"`,`\n`,`\r`,`\t` to string.
-3. support lambda
-4. add io functions, `open`,`readln`,`write`
-5. load `lib.sl` when running.
-6. add some Higher-order functions `forEach`,`map`,`from` in `lib.sl`
-7. add some interesting grammar
+3. add `\x` to string, like `\x0a`.
+4. support lambda
+5. add io functions, `open`,`readln`,`write`
+6. load `lib.sl` when running.
+7. add some Higher-order functions `forEach`,`map`,`from` in `lib.sl`
+8. add some interesting grammar
 
 ## Builtins
 

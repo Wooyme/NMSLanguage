@@ -85,7 +85,7 @@ public class SLNodeFactory {
             }
         }
     }
-
+    /*Global context*/
     /* State while parsing a source unit. */
     private final Source source;
     private final Map<String, RootCallTarget> allFunctions;
@@ -528,7 +528,9 @@ public class SLNodeFactory {
         String name = ((SLStringLiteralNode) nameNode).executeGeneric(null);
         final SLExpressionNode result;
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
-        if (frameSlot != null) {
+        if(SLReadGlobalContextNode.containsName(name)){
+            result = new SLReadGlobalContextNode(name);
+        }else if (frameSlot != null) {
             /* Read of a local variable. */
 //            result = SLReadLocalVariableNodeGen.create(frameSlot);
             result = createReadProperty(context,nameNode);
@@ -633,6 +635,99 @@ public class SLNodeFactory {
         }
         result.addExpressionTag();
 
+        return result;
+    }
+
+    public SLExpressionNode createAppend(SLExpressionNode receiverNode,SLExpressionNode valueNode){
+        if (receiverNode == null || valueNode == null) {
+            return null;
+        }
+
+        final SLExpressionNode result = SLAppendNodeGen.create(receiverNode, valueNode);
+        if(receiverNode.hasSource()) {
+            final int start = receiverNode.getSourceCharIndex();
+            final int length = valueNode.getSourceEndIndex() - start;
+            result.setSourceSection(start, length);
+        }
+        result.addExpressionTag();
+
+        return result;
+    }
+
+    public SLExpressionNode createInsert(SLExpressionNode receiverNode, SLExpressionNode indexNode, SLExpressionNode valueNode){
+        if (receiverNode == null || indexNode == null || valueNode == null) {
+            return null;
+        }
+
+        final SLExpressionNode result = SLInsertNodeGen.create(receiverNode,indexNode,valueNode);
+        if(receiverNode.hasSource()) {
+            final int start = receiverNode.getSourceCharIndex();
+            final int length = valueNode.getSourceEndIndex() - start;
+            result.setSourceSection(start, length);
+        }
+        result.addExpressionTag();
+
+        return result;
+    }
+
+    public SLExpressionNode createRemove(SLExpressionNode receiverNode, SLExpressionNode nameNode){
+        if (receiverNode == null || nameNode == null) {
+            return null;
+        }
+
+        final SLExpressionNode result = SLRemovePropertyNodeGen.create(receiverNode, nameNode);
+        if(receiverNode.hasSource()) {
+            final int startPos = receiverNode.getSourceCharIndex();
+            final int endPos = nameNode.getSourceEndIndex();
+            result.setSourceSection(startPos, endPos - startPos);
+        }
+        result.addExpressionTag();
+
+        return result;
+    }
+
+
+    public void doImport(Token globalNameToken,Token clazzNameToken){
+        String globalName = globalNameToken.getText();
+        String clazzName = clazzNameToken.getText();
+        assert clazzName.length() >= 2 && clazzName.startsWith("\"") && clazzName.endsWith("\"");
+        clazzName = clazzName.substring(1, clazzName.length() - 1);
+        try {
+            SLReadGlobalContextNode.addGlobal(globalName,clazzName);
+        } catch (ClassNotFoundException e) {
+            throw new RuntimeException(e.getMessage());
+        }
+    }
+
+    public SLExpressionNode createObject(Token literalToken,HashMap<Token,SLExpressionNode> attr){
+        SLExpressionNode result = new SLNewObjectNode(attr);
+        srcFromToken(result,literalToken);
+        return result;
+    }
+
+    public SLExpressionNode createArray(Token literalToken,List<SLExpressionNode> values){
+        SLExpressionNode result = new SLNewArrayNode(values);
+        srcFromToken(result,literalToken);
+        return result;
+    }
+
+    public SLExpressionNode createNull(Token literalToken){
+        SLExpressionNode result = SLNullLiteralNodeGen.create();
+        srcFromToken(result,literalToken);
+        return result;
+    }
+
+    public SLExpressionNode createSlice(SLExpressionNode receiverNode,SLExpressionNode startNode,SLExpressionNode endNode){
+        if (receiverNode == null || startNode == null || endNode == null) {
+            return null;
+        }
+        final SLExpressionNode result = SLSliceNodeGen.create(receiverNode,startNode,endNode);
+        if(receiverNode.hasSource()) {
+            final int start = receiverNode.getSourceCharIndex();
+            final int length = endNode.getSourceEndIndex() - start;
+            result.setSourceSection(start, length);
+        }
+        result.addExpressionTag();
         return result;
     }
 

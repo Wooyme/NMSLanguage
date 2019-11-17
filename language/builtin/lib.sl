@@ -1,16 +1,26 @@
 fn forEach(this,lambda){
     arr = members(this);
-    size = getSize(arr);
-    i = 0;
-    while(i<size){
-        lambda(this[arr[i]],arr[i]);
-        i=i+1;
+    if(arr==null){
+        size = getSize(this);
+        i = 0;
+        while(i<size){
+            lambda(this[i],i);
+            i=i+1;
+        }
+    }else{
+        size = getSize(arr);
+        i = 0;
+        while(i<size){
+            lambda(this[arr[i]],arr[i]);
+            i=i+1;
+        }
     }
 }
 
 fn map(this,lambda){
-    result = new();
     arr = members(this);
+    result = new();
+
     size = getSize(arr);
     i = 0;
     while(i<size){

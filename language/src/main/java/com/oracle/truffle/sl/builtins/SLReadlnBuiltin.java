@@ -64,9 +64,10 @@ public abstract class SLReadlnBuiltin extends SLBuiltinNode {
     @Specialization
     public Object readln(Object fh,@CachedContext(SLLanguage.class) SLContext context) {
 
-        Object result;
+        Object result = null;
         if(fh!=null)
-            result= doRead((BufferedReader) fh);
+            if(fh instanceof BufferedReader)
+                result= doRead((BufferedReader) fh);
         else
             result = doRead(context.getInput());
         if (result == null) {

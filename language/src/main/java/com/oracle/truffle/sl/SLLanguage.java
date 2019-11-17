@@ -70,7 +70,6 @@ import com.oracle.truffle.api.source.SourceSection;
 import com.oracle.truffle.sl.builtins.SLBuiltinNode;
 import com.oracle.truffle.sl.builtins.SLDefineFunctionBuiltin;
 import com.oracle.truffle.sl.builtins.SLNanoTimeBuiltin;
-import com.oracle.truffle.sl.builtins.SLPrintlnBuiltin;
 import com.oracle.truffle.sl.builtins.SLReadlnBuiltin;
 import com.oracle.truffle.sl.builtins.SLStackTraceBuiltin;
 import com.oracle.truffle.sl.nodes.SLEvalRootNode;
@@ -179,7 +178,7 @@ import com.oracle.truffle.sl.runtime.SLNull;
  * <ul>
  * <li>{@link SLReadlnBuiltin readln}: Read a String from the {@link SLContext#getInput() standard
  * input}.
- * <li>{@link SLPrintlnBuiltin println}: Write a value to the {@link SLContext#getOutput() standard
+ * <li>{@link SLPrintBuiltin println}: Write a value to the {@link SLContext#getOutput() standard
  * output}.
  * <li>{@link SLNanoTimeBuiltin nanoTime}: Returns the value of a high-resolution time, in
  * nanoseconds.

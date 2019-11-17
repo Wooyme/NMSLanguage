@@ -54,6 +54,9 @@ import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.util.SLToMemberNode;
 import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
 
+import java.util.LinkedList;
+import java.util.List;
+
 /**
  * The node for writing a property of an object. When executed, this node:
  * <ol>
@@ -71,6 +74,16 @@ import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
 public abstract class SLWritePropertyNode extends SLExpressionNode {
 
     static final int LIBRARY_LIMIT = 3;
+    @Specialization(limit = "LIBRARY_LIMIT")
+    protected Object write(List receiver, Object index, Object value,
+                           @CachedLibrary("index") InteropLibrary numbers){
+        try {
+            receiver.set(numbers.asInt(index),value);
+        } catch (UnsupportedMessageException | IndexOutOfBoundsException e) {
+            throw SLUndefinedNameException.undefinedProperty(this, index);
+        }
+        return value;
+    }
 
     @Specialization(guards = "arrays.hasArrayElements(receiver)", limit = "LIBRARY_LIMIT")
     protected Object write(Object receiver, Object index, Object value,

@@ -114,6 +114,14 @@ public static Map<String, RootCallTarget> parseSL(SLLanguage language, Source so
 
 simplelanguage
 :
+(
+    IDENTIFIER
+    '='
+    'import'
+    STRING_LITERAL
+    ';'                                     { factory.doImport($IDENTIFIER,$STRING_LITERAL); }
+)*
+
 function function* EOF
 ;
 
@@ -288,9 +296,11 @@ factor returns [SLExpressionNode result]
 (
     LOGICAL_LITERAL                             { $result = factory.createLogicalLiteral($LOGICAL_LITERAL); }
 |
+    n = 'null'                                  { $result = factory.createNull($n); }
+|
     IDENTIFIER                                  { SLExpressionNode assignmentName = factory.createStringLiteral($IDENTIFIER, false); }
     (
-        member_expression[null, null, assignmentName] { $result = $member_expression.result; }
+        member_expression[null, null, assignmentName,0] { $result = $member_expression.result; }
     |
                                                 { $result = factory.createRead(assignmentName); }
     )
@@ -298,6 +308,30 @@ factor returns [SLExpressionNode result]
     STRING_LITERAL                              { $result = factory.createStringLiteral($STRING_LITERAL, true); }
 |
     NUMERIC_LITERAL                             { $result = factory.createNumericLiteral($NUMERIC_LITERAL); }
+|
+    '['                                         { LinkedList<SLExpressionNode> list = new LinkedList<>(); }
+    (
+        expression                              { list.add($expression.result); }
+        (
+            ','
+            expression                          { list.add($expression.result); }
+        )*
+    )?
+    arr = ']'                                   { $result = factory.createArray($arr,list); }
+|
+    '{'                                         { HashMap<Token,SLExpressionNode> map = new HashMap<>(); }
+    (
+        IDENTIFIER
+        ':'
+        expression                              { map.put($IDENTIFIER,$expression.result); }
+        (
+            ','
+            IDENTIFIER
+            ':'
+            expression                          { map.put($IDENTIFIER,$expression.result); }
+        )*
+    )?
+    e = '}'                                     { $result = factory.createObject($e,map); }
 |
 
     lmbd=lambda                                 { $result = $lmbd.result; }
@@ -308,7 +342,7 @@ factor returns [SLExpressionNode result]
 )
 ;
 
-member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLExpressionNode assignmentName] returns [SLExpressionNode result]
+member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLExpressionNode assignmentName,int status] returns [SLExpressionNode result]
 :                                               { SLExpressionNode receiver = r;
                                                   SLExpressionNode nestedAssignmentName = null; }
 (
@@ -327,7 +361,12 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                 { $result = factory.createCall(receiver,assignmentReceiver, parameters, $e); }
 |
     '='
-    expression                                  { if (assignmentName == null) {
+    expression                                  {
+                                                  if(status==1){
+                                                    $result = factory.createAppend(assignmentReceiver,$expression.result);
+                                                  }else if(status == 2){
+                                                    $result = factory.createInsert(assignmentReceiver,assignmentName,$expression.result);
+                                                  }else if (assignmentName == null) {
                                                       SemErr($expression.start, "invalid assignment target");
                                                   } else if (assignmentReceiver == null) {
                                                       $result = factory.createAssignment(assignmentName, $expression.result);
@@ -354,6 +393,21 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                   parameters.add($lmbd.result);
                                                   $result = factory.createCall($result,receiver, parameters, null);
                                                 }
+
+|
+    '[]'                                        { status = 1;
+                                                  if (receiver == null) {
+                                                     receiver = factory.createRead(assignmentName);
+                                                  }
+                                                }
+|
+    '['                                          { if (receiver == null) {
+                                                     receiver = factory.createRead(assignmentName);
+                                                    } }
+    '..'
+    expression                                  {   status = 2;
+                                                    nestedAssignmentName = $expression.result; }
+    ']'
 |
     '['                                         { if (receiver == null) {
                                                       receiver = factory.createRead(assignmentName);
@@ -362,9 +416,26 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                 { nestedAssignmentName = $expression.result;
                                                   $result = factory.createReadProperty(receiver, nestedAssignmentName); }
     ']'
+|
+    '['                                         { if (receiver == null) {
+                                                    receiver = factory.createRead(assignmentName);
+                                                 } }
+     start1=expression                           { SLExpressionNode startNode = $start1.result;}
+     ':'
+     end=expression                             { SLExpressionNode endNode = $end.result; }
+    ']'                                         { $result = factory.createSlice(receiver,startNode,endNode); }
+|
+    '['
+    '-'
+    expression                                  { if (receiver == null) {
+                                                     receiver = factory.createRead(assignmentName);
+                                                  }
+                                                  $result = factory.createRemove(receiver,$expression.result);
+                                                }
+    ']'
 )
 (
-    member_expression[$result, receiver, nestedAssignmentName] { $result = $member_expression.result; }
+    member_expression[$result, receiver, nestedAssignmentName,status] { $result = $member_expression.result; }
 )?
 ;
 
@@ -374,7 +445,6 @@ WS : [ \t\r\n\u000C]+ -> skip;
 COMMENT : '/*' .*? '*/' -> skip;
 LINE_COMMENT : '//' ~[\r\n]* -> skip;
 
-
 fragment LETTER : [A-Z] | [a-z] | '_' | '$';
 fragment NON_ZERO_DIGIT : [1-9];
 fragment DIGIT : [0-9];
@@ -382,10 +452,10 @@ fragment HEX_DIGIT : [0-9] | [a-f] | [A-F];
 fragment OCT_DIGIT : [0-7];
 fragment BINARY_DIGIT : '0' | '1';
 fragment TAB : '\t';
-fragment STRING_CHAR : '\\\\' | '\\"'| '\\n' | '\\t' | '\\r' | ~( '\\' | '"' | '\r' | '\n');
+fragment STRING_CHAR : '\\\\' | '\\"'| '\\n' | '\\t' | '\\r'| '\\x' | ~( '\\' | '"' | '\r' | '\n');
 
 LOGICAL_LITERAL : 'true' | 'false';
 IDENTIFIER : LETTER (LETTER | DIGIT)*;
 STRING_LITERAL : '"' STRING_CHAR* '"';
-NUMERIC_LITERAL : '0' | NON_ZERO_DIGIT DIGIT* | '0' '.' DIGIT* | NON_ZERO_DIGIT DIGIT* '.' DIGIT*;
+NUMERIC_LITERAL : '0' | ('-')? NON_ZERO_DIGIT DIGIT* | '0' '.' DIGIT* | ('-')? NON_ZERO_DIGIT DIGIT* '.' DIGIT*;
 

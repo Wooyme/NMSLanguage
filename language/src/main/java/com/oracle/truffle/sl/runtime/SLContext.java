@@ -121,7 +121,7 @@ public final class SLContext {
     }
 
     /**
-     * The default default, i.e., the output for the {@link SLPrintlnBuiltin}. To allow unit
+     * The default default, i.e., the output for the {@link SLPrintBuiltin}. To allow unit
      * testing, we do not use {@link System#out} directly.
      */
     public PrintWriter getOutput() {
@@ -145,14 +145,12 @@ public final class SLContext {
      */
     private void installBuiltins() {
         installBuiltin(SLReadlnBuiltinFactory.getInstance());
-        installBuiltin(SLPrintlnBuiltinFactory.getInstance());
+        installBuiltin(SLPrintBuiltinFactory.getInstance());
         installBuiltin(SLNanoTimeBuiltinFactory.getInstance());
         installBuiltin(SLDefineFunctionBuiltinFactory.getInstance());
         installBuiltin(SLStackTraceBuiltinFactory.getInstance());
-        installBuiltin(SLHelloEqualsWorldBuiltinFactory.getInstance());
         installBuiltin(SLNewObjectBuiltinFactory.getInstance());
         installBuiltin(SLEvalBuiltinFactory.getInstance());
-        installBuiltin(SLImportBuiltinFactory.getInstance());
         installBuiltin(SLGetSizeBuiltinFactory.getInstance());
         installBuiltin(SLHasSizeBuiltinFactory.getInstance());
         installBuiltin(SLIsExecutableBuiltinFactory.getInstance());
@@ -162,6 +160,8 @@ public final class SLContext {
         installBuiltin(SLOpenBuiltinFactory.getInstance());
         installBuiltin(SLWriteBuiltinFactory.getInstance());
         installBuiltin(SLCloseBuiltinFactory.getInstance());
+        installBuiltin(SLReadBuiltinFactory.getInstance());
+        installBuiltin(SLSleepBuiltinFactory.getInstance());
     }
 
     public void installBuiltin(NodeFactory<? extends SLBuiltinNode> factory) {
