@@ -1,0 +1,9 @@
+File = import "java.io.File";
+fn main() {
+    file = File("pom.xml");
+    if(file.exists()){
+        print("pom.xml exists\n");
+    }else{
+        print("pom.xml doesn't exist\n");
+    }
+}

@@ -4,8 +4,11 @@ fn main() {
     a = map();
     a.put("Hello","你好");
     a.put("Alphabet",["A","B","C"]);
-    print(a.get("Hello")[0]+"\n");
+    a.put("Object",{a:"E",b:"F",c:"G"});
+    print(a.get("Hello")[0]);
+    print(a.remove("Hello")[1]+"\n");
     print(a.get("Alphabet")[0]+"\n");
+    a.get("Object") forEach { v,k: print(k+":"+v+"\n"); };
     b = pq();
     b.add(10);
     b.add(5);

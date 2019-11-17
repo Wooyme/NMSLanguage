@@ -1,4 +1,4 @@
-# Naive Mind Specialize Language
+# Native Mind Specialize Language
 
 
 ## From SimpleLanguage
@@ -26,17 +26,32 @@ For instructions on how to get started please refer to [our website](http://www.
 6. load `lib.sl` when running.
 7. add some Higher-order functions `forEach`,`map`,`from` in `lib.sl`
 8. add some interesting grammar
+9. add `[]` to create array
+10. add `{}` to create object
+11. add `import`
+## import
+```nmsl
+map = import "java.util.HashMap";
+pq = import "java.util.PriorityQueue";
+fn main() {
+    a = map();
+    a.put("Hello","你好");
+    a.put("Alphabet",["A","B","C"]);
+    a.put("Object",{a:"E",b:"F",c:"G"});
+    print(a.get("Hello")[0]);
+    print(a.remove("Hello")[1]+"\n");
+    print(a.get("Alphabet")[0]+"\n");
+    a.get("Object") forEach { v,k: print(k+":"+v+"\n"); };
+    b = pq();
+    b.add(10);
+    b.add(5);
+    b.add(7);
+    print(b.poll()+"\n");
+}
+```
+导入jdk中的class,从此继承java生态。
 
 ## Builtins
-
-### new
-```
-a = new();
-a.a = "Hello";
-a["b"] = "World";
-a[0] = "!";
-```
-new()会生成一个object **NMSL不区分object，array和map**
 
 ### open
 ```
@@ -47,6 +62,7 @@ c = open("shell:ls","<");
 ```
 URL参数支持 `http` `https` `file` `shell` 关键字
 Option 包括 `<`,`>`,`<+`,`>+`,`>>+` `+`表示若文件不存在则创建，`>>`表示附加。
+
 ## Example
 ```
 fn main() {

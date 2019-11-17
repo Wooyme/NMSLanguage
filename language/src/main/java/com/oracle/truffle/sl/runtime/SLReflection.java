@@ -13,11 +13,18 @@ import java.util.List;
 
 public class SLReflection {
 
-    public class SLReflectionMethod{
-        private final SLReflection father;
+    public static class SLReflectionMethod{
+        private final Class clazz;
+        private final Object obj;
         private final String name;
+        public SLReflectionMethod(Class clazz,String name){
+            this.clazz = clazz;
+            this.name = name;
+            this.obj = null;
+        }
         public SLReflectionMethod(SLReflection father,String name){
-            this.father = father;
+            this.clazz = father.clazz;
+            this.obj = father.instance;
             this.name = name;
         }
 
@@ -27,8 +34,8 @@ public class SLReflection {
                 parameters[i] = Object.class;
             }
             Object[] args1 = Arrays.copyOfRange(args,1,args.length);
-            Method method = father.clazz.getDeclaredMethod(this.name,parameters);
-            Object any = method.invoke(this.father.instance,args1);
+            Method method = clazz.getDeclaredMethod(this.name,parameters);
+            Object any = method.invoke(this.obj,args1);
             if(any==null)
                 return SLNull.SINGLETON;
             if(any instanceof Integer){
@@ -45,7 +52,7 @@ public class SLReflection {
                 return new SLBigNumber((BigDecimal) any);
             }else if(any instanceof Array){
                 return new LinkedList<>(Arrays.asList((Object[]) any));
-            }else if(any instanceof String || any instanceof List || any instanceof DynamicObject || any instanceof SLObjectType){
+            }else if(any instanceof String || any instanceof List || any instanceof Boolean || any instanceof DynamicObject || any instanceof SLObjectType){
                 return any;
             }else{
                 return new SLReflection(any);

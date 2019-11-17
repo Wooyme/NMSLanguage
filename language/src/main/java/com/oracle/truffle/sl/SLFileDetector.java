@@ -49,7 +49,7 @@ public final class SLFileDetector implements TruffleFile.FileTypeDetector {
     @Override
     public String findMimeType(TruffleFile file) throws IOException {
         String name = file.getName();
-        if (name != null && name.endsWith(".sl")) {
+        if (name != null && name.endsWith(".nmsl")) {
             return SLLanguage.MIME_TYPE;
         }
         return null;

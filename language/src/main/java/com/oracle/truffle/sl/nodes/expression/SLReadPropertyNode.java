@@ -104,6 +104,19 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
         }
     }
 
+    @Specialization(limit = "LIBRARY_LIMIT")
+    protected Object readStatic(Class clazz,Object name,@Cached SLToMemberNode asMember){
+        try{
+            try {
+                return clazz.getDeclaredField(asMember.execute(name)).get(null);
+            } catch (IllegalAccessException|NoSuchFieldException e) {
+                return new SLReflection.SLReflectionMethod(clazz,asMember.execute(name));
+            }
+        }catch (UnknownIdentifierException ex){
+            throw SLUndefinedNameException.undefinedProperty(this, name);
+        }
+    }
+
     @Specialization(guards = "arrays.hasArrayElements(receiver)", limit = "LIBRARY_LIMIT")
     protected Object readArray(TruffleObject receiver, Object index,
                                @CachedLibrary("receiver") InteropLibrary arrays,
