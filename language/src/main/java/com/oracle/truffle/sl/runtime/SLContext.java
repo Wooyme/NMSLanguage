@@ -162,6 +162,10 @@ public final class SLContext {
         installBuiltin(SLCloseBuiltinFactory.getInstance());
         installBuiltin(SLReadBuiltinFactory.getInstance());
         installBuiltin(SLSleepBuiltinFactory.getInstance());
+        installBuiltin(SLInterfaceBuiltinFactory.getInstance());
+        installBuiltin(SLToIntNodeFactory.getInstance());
+        installBuiltin(SLFromProxyBuiltinFactory.getInstance());
+        installBuiltin(SLUnInterfaceBuiltinFactory.getInstance());
     }
 
     public void installBuiltin(NodeFactory<? extends SLBuiltinNode> factory) {

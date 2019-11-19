@@ -1,0 +1,11 @@
+fn main(){
+    x = 1-2;
+    v = [10,100,1000];
+    v forEach {v: print(v/x+"\n"); };
+    y = {a:5};
+    w = [5,4,3,2,1];
+    w forEach { v:
+        print(v/y.a + "\n");
+        y.a = y.a - 1;
+    };
+}

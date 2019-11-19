@@ -41,6 +41,7 @@
 package com.oracle.truffle.sl.nodes.expression;
 
 import com.oracle.truffle.api.dsl.Cached;
+import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.interop.*;
@@ -118,7 +119,7 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     }
 
     @Specialization(guards = "arrays.hasArrayElements(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object readArray(TruffleObject receiver, Object index,
+    protected Object readArray(Object receiver, Object index,
                                @CachedLibrary("receiver") InteropLibrary arrays,
                                @CachedLibrary("index") InteropLibrary numbers) {
         try {
@@ -130,7 +131,7 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     }
 
     @Specialization(guards = "objects.hasMembers(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object readObject(TruffleObject receiver, Object name,
+    protected Object readObject(Object receiver, Object name,
                     @CachedLibrary("receiver") InteropLibrary objects,
                     @Cached SLToMemberNode asMember) {
         try {
@@ -138,6 +139,15 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             // read was not successful. In SL we only have basic support for errors.
             throw SLUndefinedNameException.undefinedProperty(this, name);
+        }
+    }
+
+    @Fallback
+    public Object typeError(Object receiver,Object name){
+        if(receiver instanceof SLNull){
+            throw new SLException("Receiver cannot be null",this);
+        }else{
+            throw new SLException("Unsupported receiver "+receiver+" when reading property "+name,this);
         }
     }
 }

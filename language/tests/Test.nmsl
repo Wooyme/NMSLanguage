@@ -1,0 +1,4 @@
+load "language/tests/LoadTest.nmsl";
+fn main(){
+    test();
+}

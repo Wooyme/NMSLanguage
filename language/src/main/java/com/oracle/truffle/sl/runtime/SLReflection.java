@@ -52,7 +52,7 @@ public class SLReflection {
                 return new SLBigNumber((BigDecimal) any);
             }else if(any instanceof Array){
                 return new LinkedList<>(Arrays.asList((Object[]) any));
-            }else if(any instanceof String || any instanceof List || any instanceof Boolean || any instanceof DynamicObject || any instanceof SLObjectType){
+            }else if( SLProxy.getRaw(any)!=null ||any instanceof String || any instanceof List || any instanceof Boolean || any instanceof DynamicObject || any instanceof SLObjectType){
                 return any;
             }else{
                 return new SLReflection(any);

@@ -121,7 +121,11 @@ simplelanguage
     STRING_LITERAL
     ';'                                     { factory.doImport($IDENTIFIER,$STRING_LITERAL); }
 )*
-
+(
+  'load'
+   STRING_LITERAL                            { factory.doLoad($STRING_LITERAL); }
+   ';'
+)*
 function function* EOF
 ;
 
@@ -307,7 +311,8 @@ factor returns [SLExpressionNode result]
 |
     STRING_LITERAL                              { $result = factory.createStringLiteral($STRING_LITERAL, true); }
 |
-    NUMERIC_LITERAL                             { $result = factory.createNumericLiteral($NUMERIC_LITERAL); }
+    sb = '-'?
+    NUMERIC_LITERAL                             { $result = factory.createNumericLiteral($sb,$NUMERIC_LITERAL); }
 |
     '['                                         { LinkedList<SLExpressionNode> list = new LinkedList<>(); }
     (
@@ -395,7 +400,7 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                 }
 
 |
-    '[]'                                        { status = 1;
+    '['']'                                      { status = 1;
                                                   if (receiver == null) {
                                                      receiver = factory.createRead(assignmentName);
                                                   }
@@ -457,5 +462,5 @@ fragment STRING_CHAR : '\\\\' | '\\"'| '\\n' | '\\t' | '\\r'| '\\x' | ~( '\\' | 
 LOGICAL_LITERAL : 'true' | 'false';
 IDENTIFIER : LETTER (LETTER | DIGIT)*;
 STRING_LITERAL : '"' STRING_CHAR* '"';
-NUMERIC_LITERAL : '0' | ('-')? NON_ZERO_DIGIT DIGIT* | '0' '.' DIGIT* | ('-')? NON_ZERO_DIGIT DIGIT* '.' DIGIT*;
+NUMERIC_LITERAL : '0' | NON_ZERO_DIGIT DIGIT* | '0' '.' DIGIT* | NON_ZERO_DIGIT DIGIT* '.' DIGIT*;
 

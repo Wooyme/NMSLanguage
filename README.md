@@ -28,7 +28,25 @@ For instructions on how to get started please refer to [our website](http://www.
 8. add some interesting grammar
 9. add `[]` to create array
 10. add `{}` to create object
-11. add `import`
+11. add `import`,`load`
+12. add `link`,`unlink`,`fr`
+
+## load
+```nmsl
+// Test.nmsl
+load "language/tests/LoadTest.nmsl";
+fn main(){
+    test();
+}
+```
+```nmsl
+// LoadTest.nmsl
+fn test(){
+    print("This is Test!");
+}
+```
+加载其他源文件中的函数
+
 ## import
 ```nmsl
 map = import "java.util.HashMap";
@@ -49,7 +67,81 @@ fn main() {
     print(b.poll()+"\n");
 }
 ```
-导入jdk中的class,从此继承java生态。
+导入jdk与classpath中的类。
+
+## link&unlink
+```nmsl
+pq = import "java.util.PriorityQueue";
+fn main(){
+    a = {value:1000};
+    b = {value:100};
+    a.compareTo = {this,other: return toInt(this.value-other.value); };
+    b.compareTo = {this,other: return toInt(this.value-other.value); };
+    a1 = link(a,"java.lang.Comparable");
+    b1 = link(b,"java.lang.Comparable");
+    q = pq();
+    q.add(a1);
+    q.add(b1);
+    print(fr(q.poll()).value+"\n");
+    print(fr(q.poll()).value+"\n");
+    print(fr(q.poll()).value+"\n");
+    unlink(a1);
+    unlink(b1);
+}
+```
+`link`绑定nmsl的Object与java中的interface.以`Comparable`为例，继承`Comparable`中需要实现`compareTo`方法,
+只要Object中存在`compareTo`属性则link产生的`Java Object`会调用该属性。
+
+`unlink`解绑,如果不解绑会造成内存泄露
+
+`fr`从`Java Object`中还原`NMSL Object`
+
+## lambda
+```nmsl
+fn main(){
+    x = 2;
+    v = [10,100,1000];
+    v forEach {v: print(v/2+"\n"); };
+}
+//forEach 定义
+fn forEach(this,lambda){
+    arr = members(this);
+    if(arr==null){
+        size = getSize(this);
+        i = 0;
+        while(i<size){
+            lambda(this[i],i);
+            i=i+1;
+        }
+    }else{
+        size = getSize(arr);
+        i = 0;
+        while(i<size){
+            lambda(this[arr[i]],arr[i]);
+            i=i+1;
+        }
+    }
+}
+```
+> tips: 当函数只有两个参数，且第二个参数是函数时，可以写成 arg1 function {};
+
+为了保证不产生副作用，所以lambda内只能访问外部变量，不能修改(x)
+用了复制context的方式，所以改了也只是局部改动而已
+
+```nmsl
+fn main(){
+    x = 2;
+    v = [10,100,1000];
+    v forEach {v: print(v/2+"\n"); };
+    y = {a:5};
+    w = [5,4,3,2,1];
+    w forEach { v:
+        print(v/y.a + "\n");
+        y.a = y.a - 1;
+    };
+}
+```
+context的复制不是深拷贝，所以y内部的属性可以修改
 
 ## Builtins
 

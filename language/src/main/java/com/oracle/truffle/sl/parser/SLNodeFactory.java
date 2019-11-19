@@ -55,11 +55,17 @@ import com.oracle.truffle.sl.nodes.controlflow.*;
 import com.oracle.truffle.sl.nodes.expression.*;
 import com.oracle.truffle.sl.nodes.local.*;
 import com.oracle.truffle.sl.nodes.util.SLUnboxNodeGen;
+import com.oracle.truffle.sl.runtime.SLFunctionRegistry;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.Token;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.math.BigDecimal;
+import java.net.MalformedURLException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -107,11 +113,29 @@ public class SLNodeFactory {
     public SLNodeFactory(SLLanguage language, Source source) {
         this.language = language;
         this.source = source;
+
         this.allFunctions = new HashMap<>();
     }
 
     public Map<String, RootCallTarget> getAllFunctions() {
         return allFunctions;
+    }
+
+    public void doLoad(Token fileToken){
+        String filename = fileToken.getText();
+        assert filename.length() >= 2 && filename.startsWith("\"") && filename.endsWith("\"");
+        filename = filename.substring(1, filename.length() - 1);
+        try {
+            File file = new File(filename);
+            FileInputStream fis = new FileInputStream(file);
+            byte[] data = new byte[(int) file.length()];
+            fis.read(data);
+            fis.close();
+            String str = new String(data, StandardCharsets.UTF_8);
+            this.language.getContextReference().get().getFunctionRegistry().register(Source.newBuilder("sl",str,"(load)").build());
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage());
+        }
     }
 
     public void startFunction(Token nameToken, Token bodyStartToken) {
@@ -192,9 +216,12 @@ public class SLNodeFactory {
             if(oldEnv==null) {
                 allFunctions.put(functionName, Truffle.getRuntime().createCallTarget(rootNode));
                 functionNode = new SLFunctionLiteralNode(language, functionName);
+
             }else {
                 functionNode = new SLFunctionLiteralNode(language, functionName,Truffle.getRuntime().createCallTarget(rootNode), context);
             }
+            functionNode.setSourceSection(functionStartPos,bodyEndPos-functionStartPos);
+            functionNode.addExpressionTag();
         }
         if(oldEnv==null) {
             functionStartPos = 0;
@@ -565,14 +592,15 @@ public class SLNodeFactory {
         return result;
     }
 
-    public SLExpressionNode createNumericLiteral(Token literalToken) {
+    public SLExpressionNode createNumericLiteral(Token symbolToken,Token literalToken) {
         SLExpressionNode result;
+        String symbol = symbolToken!=null?"-":"";
         try {
             /* Try if the literal is small enough to fit into a long value. */
-            result = new SLLongLiteralNode(Long.parseLong(literalToken.getText()));
+            result = new SLLongLiteralNode(Long.parseLong(symbol+literalToken.getText()));
         } catch (NumberFormatException ex) {
             /* Overflow of long value, so fall back to BigInteger. */
-            result = new SLBigIntegerLiteralNode(new BigDecimal(literalToken.getText()));
+            result = new SLBigIntegerLiteralNode(new BigDecimal(symbolToken+literalToken.getText()));
         }
         srcFromToken(result, literalToken);
         result.addExpressionTag();
