@@ -1,0 +1,14 @@
+Thread = import "java.lang.Thread";
+fn main(){
+    runnable = {};
+    runnable.run = {this:
+        Thread.sleep(500);
+        print("Hello!");
+    };
+    r = link(runnable,"java.lang.Runnable");
+    thread = Thread(r);
+    thread.start();
+    print("World!");
+    sleep(1000);
+    print("\n");
+}

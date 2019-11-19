@@ -11,7 +11,6 @@ fn main(){
     q.add(b1);
     print(fr(q.poll()).value+"\n");
     print(fr(q.poll()).value+"\n");
-    print(fr(q.poll()).value+"\n");
     unlink(a1);
     unlink(b1);
 }

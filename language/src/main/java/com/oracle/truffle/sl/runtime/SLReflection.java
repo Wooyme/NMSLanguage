@@ -2,9 +2,7 @@ package com.oracle.truffle.sl.runtime;
 
 import com.oracle.truffle.api.object.DynamicObject;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Arrays;
@@ -17,25 +15,59 @@ public class SLReflection {
         private final Class clazz;
         private final Object obj;
         private final String name;
+        private final Method[] methods;
         public SLReflectionMethod(Class clazz,String name){
             this.clazz = clazz;
             this.name = name;
+            this.methods = initMethod();
             this.obj = null;
         }
         public SLReflectionMethod(SLReflection father,String name){
             this.clazz = father.clazz;
             this.obj = father.instance;
             this.name = name;
+            this.methods = initMethod();
+        }
+
+        private Method[] initMethod(){
+            Method[] methods = this.clazz.getDeclaredMethods();
+            LinkedList<Method> filteredMethods = new LinkedList<>();
+            for (Method method : methods) {
+                if(method.getName().equals(this.name)){
+                    filteredMethods.add(method);
+                }
+            }
+            Method[] _methods = new Method[filteredMethods.size()];
+            return filteredMethods.toArray(_methods);
         }
 
         public Object invoke(Object[] args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-            Class[] parameters = new Class[args.length-1];
-            for (int i = 0; i < args.length-1; i++) {
-                parameters[i] = Object.class;
+            Method foundMethod = null;
+            for (int i = 0; i < methods.length; i++) {
+                final Method method = methods[i];
+                if(method.getParameterCount()==args.length-1){
+                    Class[] params = method.getParameterTypes();
+                    boolean _result = true;
+                    for (int j = 0; j < params.length; j++) {
+                        if(!params[j].isPrimitive() && params[j]!=(args[j+1].getClass()) && params[j]!=args[j+1].getClass().getInterfaces()[0] && params[j]!=Object.class){
+                            _result = false;
+                            break;
+                        }
+                    }
+                    if(_result) {
+                        foundMethod = method;
+                        Method _tmp = methods[0];
+                        methods[0] = foundMethod; //提高优先级，下次搜索的时候只需要一次循环.
+                        methods[i] = _tmp;
+                        break;
+                    }
+                }
+            }
+            if(foundMethod==null){
+                throw new NoSuchMethodException();
             }
             Object[] args1 = Arrays.copyOfRange(args,1,args.length);
-            Method method = clazz.getDeclaredMethod(this.name,parameters);
-            Object any = method.invoke(this.obj,args1);
+            Object any = foundMethod.invoke(this.obj,args1);
             if(any==null)
                 return SLNull.SINGLETON;
             if(any instanceof Integer){
@@ -69,11 +101,29 @@ public class SLReflection {
 
     public SLReflection(Class clazz,Object[] args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         this.clazz = clazz;
-        Class[] parameters = new Class[args.length];
-        for (int i = 0; i < args.length; i++) {
-            parameters[i] = args[i].getClass();
+        Constructor[] constructors = clazz.getConstructors();
+        Constructor foundConstructor = null;
+        for (int i = 0; i < constructors.length; i++) {
+            final Constructor constructor = constructors[i];
+            if(constructor.getParameterCount()==args.length){
+                Class[] params = constructor.getParameterTypes();
+                boolean _result = true;
+                for (int j = 0; j < params.length; j++) {
+                    if(!params[j].isPrimitive() && params[j]!=args[j].getClass() && params[j]!=args[j].getClass().getInterfaces()[0] && params[j]!=Object.class){
+                        _result = false;
+                        break;
+                    }
+                }
+                if(_result) {
+                    foundConstructor = constructor;
+                    break;
+                }
+            }
         }
-        instance = clazz.getConstructor(parameters).newInstance(args);
+        if(foundConstructor==null){
+            throw new NoSuchMethodException();
+        }
+        instance = foundConstructor.newInstance(args);
     }
 
     public Object readProperty(String name) throws IllegalAccessException {

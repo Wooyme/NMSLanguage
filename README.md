@@ -1,5 +1,7 @@
 # Native Mind Specialize Language
 
+## NMSL
+
 
 ## From SimpleLanguage
 > https://github.com/graalvm/simplelanguage
@@ -125,8 +127,9 @@ fn forEach(this,lambda){
 ```
 > tips: 当函数只有两个参数，且第二个参数是函数时，可以写成 arg1 function {};
 
-为了保证不产生副作用，所以lambda内只能访问外部变量，不能修改(x)
-用了复制context的方式，所以改了也只是局部改动而已
+为了保证不产生副作用，lambda内只能访问外部变量，不能修改
+
+> 用了复制context的方式，所以改了也只是局部改动而已
 
 ```nmsl
 fn main(){
@@ -143,6 +146,25 @@ fn main(){
 ```
 context的复制不是深拷贝，所以y内部的属性可以修改
 
+## Multiple Thead
+```nmsl
+Thread = import "java.lang.Thread";
+fn main(){
+    runnable = {};
+    runnable.run = {this:
+        Thread.sleep(500);
+        print("Hello!");
+    };
+    r = link(runnable,"java.lang.Runnable");
+    thread = Thread(r);
+    thread.start();
+    print("World!");
+    sleep(1000);
+    print("\n");
+}
+```
+使用java的`Thread`
+
 ## Builtins
 
 ### open
@@ -154,15 +176,3 @@ c = open("shell:ls","<");
 ```
 URL参数支持 `http` `https` `file` `shell` 关键字
 Option 包括 `<`,`>`,`<+`,`>+`,`>>+` `+`表示若文件不存在则创建，`>>`表示附加。
-
-## Example
-```
-fn main() {
-    n = "\n";
-    fh_r = open("http://www.baidu.com","<");
-    fh_w = open("file:index.html",">+");
-    fh_r from {line: return line; } map {l: return l+n; } forEach {l: write(fh_w,l); };
-    close(fh_r);
-    close(fh_w);
-}
-```

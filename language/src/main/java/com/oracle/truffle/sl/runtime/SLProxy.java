@@ -31,20 +31,30 @@ public class SLProxy {
             Object[] args1;
             int offset;
             if(function.getCtx()!=null){
-                args1 = new Object[args.length + 2];
+                if(args!=null){
+                    args1 = new Object[args.length + 2];
+                }else{
+                    args1 = new Object[2];
+                }
+                offset = 2;
                 args1[0] = function.getCtx();
                 args1[1] = obj;
-                offset = 2;
             }else{
-                args1 = new Object[args.length+1];
-                args1[0] = obj;
-                offset = 1;
-            }
-            for (int i = 0; i < args.length; i++) {
-                if(objectMap.containsKey(args[i])){
-                    args1[offset+i] = objectMap.get(args[i]);
+                if(args!=null) {
+                    args1 = new Object[args.length + 1];
                 }else{
-                    args1[offset+i] = args[i];
+                    args1 = new Object[1];
+                }
+                offset = 1;
+                args1[0] = obj;
+            }
+            if(args!=null) {
+                for (int i = 0; i < args.length; i++) {
+                    if (objectMap.containsKey(args[i])) {
+                        args1[offset + i] = objectMap.get(args[i]);
+                    } else {
+                        args1[offset + i] = args[i];
+                    }
                 }
             }
             Object result = null;
