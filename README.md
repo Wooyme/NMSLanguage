@@ -32,7 +32,7 @@ For instructions on how to get started please refer to [our website](http://www.
 10. add `{}` to create object
 11. add `import`,`load`
 12. add `link`,`unlink`,`fr`
-
+13. load jars in libs folder
 ## load
 ```nmsl
 // Test.nmsl
@@ -176,3 +176,52 @@ c = open("shell:ls","<");
 ```
 URL参数支持 `http` `https` `file` `shell` 关键字
 Option 包括 `<`,`>`,`<+`,`>+`,`>>+` `+`表示若文件不存在则创建，`>>`表示附加。
+
+## Example using Vert.x
+```nmsl
+Vertx = import "io.vertx.core.Vertx";
+Router = import "io.vertx.ext.web.Router";
+JDBC = import "io.vertx.ext.jdbc.JDBCClient";
+Json = import "io.vertx.core.json.JsonObject";
+Buffer = import "io.vertx.core.buffer.Buffer";
+fn main(){
+    stop = {stop:false};
+    vertx = Vertx.vertx();
+    client = jdbc(vertx);
+    vertx.createHttpServer().requestHandler(link({handle:{this,req:
+        action = req.getParam("action");
+        if(action=="stop") {
+            stop.stop = true;
+            req.response().end(Buffer.buffer("Bye\n"));
+            return;
+        }
+        offset = req.getParam("offset");
+        limit = req.getParam("limit");
+        print("Offset:"+offset+" limit:"+limit+"\n");
+        client.query("SELECT deviceId FROM sstalink_device LIMIT "+offset+","+limit,link({handle:{this,ar:
+            if(ar.succeeded()){
+                ret = {result:""};
+                ar.result().getRows() forEach { v:
+                    print(v.getString("deviceId")+"\n");
+                    ret.result = ret.result+v.getString("deviceId")+"\n";
+                };
+                req.response().end(Buffer.buffer(ret.result+"\n"));
+            }else{
+                req.response().end(Buffer.buffer("Failed\n"));
+            }
+        }},"io.vertx.core.Handler"));
+    }},"io.vertx.core.Handler")).listen(toInt(8080));
+    while(!stop.stop){
+        sleep(1000);
+    }
+}
+
+fn jdbc(vertx){
+    config = Json();
+    config.put("url","jdbc:mysql://localhost/test");
+    config.put("driver_class","com.mysql.cj.jdbc.Driver");
+    config.put("user","root");
+    config.put("password","Admin88888");
+    return JDBC.createShared(vertx,config);
+}
+```
