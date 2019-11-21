@@ -104,6 +104,9 @@ public final class SLFunctionLiteralNode extends SLExpressionNode {
                 Object ctx = context.executeGeneric(frame);
                 cachedFunction = reference.get().getFunctionRegistry().registerLambda(functionName,callTarget,ctx);
             }
+        }else if(cachedFunction.getName().startsWith("@") && context!=null){
+            Object ctx = context.executeGeneric(frame);
+            cachedFunction.setCtx(ctx);
         }
         return cachedFunction;
     }

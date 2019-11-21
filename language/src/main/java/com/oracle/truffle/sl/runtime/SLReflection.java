@@ -1,13 +1,13 @@
 package com.oracle.truffle.sl.runtime;
 
-import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.sl.SLLanguage;
 
-import java.lang.reflect.*;
-import java.math.BigDecimal;
-import java.math.BigInteger;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.LinkedList;
-import java.util.List;
 
 public class SLReflection {
 
@@ -29,11 +29,24 @@ public class SLReflection {
             this.methods = initMethod();
         }
 
+        private static boolean primitiveEqual(Class clazz,Object obj){
+            if(!clazz.isPrimitive()) return false;
+            if(clazz.getName().equals("int") && obj instanceof Integer) return true;
+            if(clazz.getName().equals("long") && obj instanceof Long) return true;
+            if(clazz.getName().equals("double") && obj instanceof Double) return true;
+            if(clazz.getName().equals("boolean") && obj instanceof Boolean) return true;
+            if(clazz.getName().equals("float") && obj instanceof Float) return true;
+            if(clazz.getName().equals("char") && obj instanceof Character) return true;
+            if(clazz.getName().equals("short") && obj instanceof Short) return true;
+            if(clazz.getName().equals("byte") && obj instanceof Byte) return true;
+            return false;
+        }
+
         private Method[] initMethod(){
             Method[] methods = this.clazz.getDeclaredMethods();
             LinkedList<Method> filteredMethods = new LinkedList<>();
             for (Method method : methods) {
-                if(method.getName().equals(this.name)){
+                if(method.getName().equals(this.name) && Modifier.isPublic(method.getModifiers())){
                     filteredMethods.add(method);
                 }
             }
@@ -45,13 +58,21 @@ public class SLReflection {
             Method foundMethod = null;
             for (int i = 0; i < methods.length; i++) {
                 final Method method = methods[i];
-                if(method.getParameterCount()==args.length-1){
+                if(method.getParameterCount()==args.length){
                     Class[] params = method.getParameterTypes();
                     boolean _result = true;
-                    for (int j = 0; j < params.length; j++) {
-                        if(!params[j].isPrimitive() && params[j]!=(args[j+1].getClass()) && params[j]!=args[j+1].getClass().getInterfaces()[0] && params[j]!=Object.class){
-                            _result = false;
-                            break;
+                    if(params.length != 0) {
+                        for (int j = 0; j < params.length; j++) {
+                            if (!params[j].isInstance(args[j])
+                                    && !primitiveEqual(params[j],args[j])
+                                    && (!(args[j] instanceof SLReflection) || !params[j].isAssignableFrom(((SLReflection) args[j]).clazz))
+                                    && params[j] != Object.class) {
+                                _result = false;
+                                break;
+                            }
+                            if(args[j] instanceof SLReflection){
+                                args[j] = ((SLReflection)args[j]).instance;
+                            }
                         }
                     }
                     if(_result) {
@@ -66,29 +87,13 @@ public class SLReflection {
             if(foundMethod==null){
                 throw new NoSuchMethodException();
             }
-            Object[] args1 = Arrays.copyOfRange(args,1,args.length);
-            Object any = foundMethod.invoke(this.obj,args1);
-            if(any==null)
-                return SLNull.SINGLETON;
-            if(any instanceof Integer){
-                return new SLBigNumber(new BigDecimal((Integer) any));
-            }else if(any instanceof Long){
-                return new SLBigNumber(new BigDecimal((Long) any));
-            }else if(any instanceof Float){
-                return new SLBigNumber(new BigDecimal((Float) any));
-            }else if(any instanceof Double){
-                return new SLBigNumber(new BigDecimal((Double) any));
-            }else if(any instanceof BigInteger){
-                return new SLBigNumber(new BigDecimal((BigInteger) any));
-            }else if(any instanceof BigDecimal){
-                return new SLBigNumber((BigDecimal) any);
-            }else if(any instanceof Array){
-                return new LinkedList<>(Arrays.asList((Object[]) any));
-            }else if( SLProxy.getRaw(any)!=null ||any instanceof String || any instanceof List || any instanceof Boolean || any instanceof DynamicObject || any instanceof SLObjectType){
-                return any;
-            }else{
-                return new SLReflection(any);
-            }
+            foundMethod.setAccessible(true);
+            Object any = foundMethod.invoke(this.obj,args);
+            return SLLanguage.toLanguageObject(any);
+        }
+
+        public String getName(){
+            return this.name;
         }
     }
     private final Class<?> clazz;
@@ -126,10 +131,10 @@ public class SLReflection {
         instance = foundConstructor.newInstance(args);
     }
 
-    public Object readProperty(String name) throws IllegalAccessException {
+    public Object readProperty(String name){
         try {
             return this.clazz.getDeclaredField(name).get(this.instance);
-        } catch (NoSuchFieldException e) {
+        } catch (NoSuchFieldException | IllegalAccessException e ) {
             return new SLReflectionMethod(this,name);
         }
     }

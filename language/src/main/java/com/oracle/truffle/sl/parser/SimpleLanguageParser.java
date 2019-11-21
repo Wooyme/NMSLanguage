@@ -1685,7 +1685,7 @@ public class SimpleLanguageParser extends Parser {
 
 				setState(320);
 				((Member_expressionContext)_localctx).e = match(T__7);
-				 ((Member_expressionContext)_localctx).result =  factory.createCall(receiver,assignmentReceiver, parameters, ((Member_expressionContext)_localctx).e); 
+				 ((Member_expressionContext)_localctx).result =  factory.createCall(receiver,null, parameters, ((Member_expressionContext)_localctx).e); 
 				}
 				break;
 			case 2:
@@ -1735,6 +1735,7 @@ public class SimpleLanguageParser extends Parser {
 				((Member_expressionContext)_localctx).lmbd = lambda();
 
 				                                                  List<SLExpressionNode> parameters = new ArrayList<>();
+
 				                                                  parameters.add(((Member_expressionContext)_localctx).lmbd.result);
 				                                                  ((Member_expressionContext)_localctx).result =  factory.createCall(_localctx.result,receiver, parameters, null);
 				                                                

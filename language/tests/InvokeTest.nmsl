@@ -1,0 +1,8 @@
+fn main(){
+    tmp = b().a();
+}
+
+fn b(){
+    print("A");
+    return {a:b};
+}

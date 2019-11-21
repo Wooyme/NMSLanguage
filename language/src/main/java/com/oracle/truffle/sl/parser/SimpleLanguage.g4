@@ -188,11 +188,11 @@ statement [boolean inLoop] returns [SLStatementNode result]
     c='continue'                                { if (inLoop) { $result = factory.createContinue($c); } else { SemErr($c, "continue used outside of loop"); } }
     ';'
 |
-    if_statement[inLoop]                { $result = $if_statement.result; }
+    if_statement[inLoop]                        { $result = $if_statement.result; }
 |
-    return_statement                   { $result = $return_statement.result; }
+    return_statement                            { $result = $return_statement.result; }
 |
-    expression ';'                     { $result = $expression.result; }
+    expression ';'                              { $result = $expression.result; }
 |
     d='debugger'                                { $result = factory.createDebugger($d); }
     ';'
@@ -356,14 +356,14 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                       receiver = factory.createRead(assignmentName);
                                                   } }
     (
-        expression                     { parameters.add($expression.result); }
+        expression                              { parameters.add($expression.result); }
         (
             ','
-            expression                 { parameters.add($expression.result); }
+            expression                          { parameters.add($expression.result); }
         )*
     )?
     e=')'
-                                                { $result = factory.createCall(receiver,assignmentReceiver, parameters, $e); }
+                                                { $result = factory.createCall(receiver,null, parameters, $e); }
 |
     '='
     expression                                  {
@@ -395,6 +395,7 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
     lmbd=lambda
                                                 {
                                                   List<SLExpressionNode> parameters = new ArrayList<>();
+
                                                   parameters.add($lmbd.result);
                                                   $result = factory.createCall($result,receiver, parameters, null);
                                                 }

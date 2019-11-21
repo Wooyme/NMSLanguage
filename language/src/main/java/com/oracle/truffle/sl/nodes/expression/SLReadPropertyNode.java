@@ -40,6 +40,7 @@
  */
 package com.oracle.truffle.sl.nodes.expression;
 
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
@@ -50,6 +51,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.SLException;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.util.SLToMemberNode;
+import com.oracle.truffle.sl.runtime.SLFunction;
 import com.oracle.truffle.sl.runtime.SLNull;
 import com.oracle.truffle.sl.runtime.SLReflection;
 import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
@@ -78,7 +80,11 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     protected Object readArray(List receiver, Object index,
                                @CachedLibrary("index") InteropLibrary numbers) {
         try {
-            return receiver.get(numbers.asInt(index));
+            Object obj = receiver.get(numbers.asInt(index));
+            if(obj instanceof SLFunction){
+                ((SLFunction) obj).setSelf(receiver);
+            }
+            return obj;
         } catch (UnsupportedMessageException | IndexOutOfBoundsException e ) {
             // read was not successful. In SL we only have basic support for errors.
             throw SLUndefinedNameException.undefinedProperty(this, index);
@@ -100,7 +106,7 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     protected Object readObject(SLReflection obj,Object name,@Cached SLToMemberNode asMember){
         try {
             return obj.readProperty(asMember.execute(name));
-        } catch (IllegalAccessException | UnknownIdentifierException e) {
+        } catch (UnknownIdentifierException e) {
             throw new SLException(e.getMessage(),this);
         }
     }
@@ -119,11 +125,15 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     }
 
     @Specialization(guards = "arrays.hasArrayElements(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object readArray(Object receiver, Object index,
+    protected Object readArray(TruffleObject receiver, Object index,
                                @CachedLibrary("receiver") InteropLibrary arrays,
                                @CachedLibrary("index") InteropLibrary numbers) {
         try {
-            return arrays.readArrayElement(receiver, numbers.asLong(index));
+            Object obj = arrays.readArrayElement(receiver, numbers.asLong(index));
+            if(obj instanceof SLFunction){
+                ((SLFunction) obj).setSelf(receiver);
+            }
+            return obj;
         } catch (UnsupportedMessageException | InvalidArrayIndexException e) {
             // read was not successful. In SL we only have basic support for errors.
             throw SLUndefinedNameException.undefinedProperty(this, index);
@@ -131,18 +141,24 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     }
 
     @Specialization(guards = "objects.hasMembers(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object readObject(Object receiver, Object name,
+    protected Object readObject(TruffleObject receiver, Object name,
                     @CachedLibrary("receiver") InteropLibrary objects,
                     @Cached SLToMemberNode asMember) {
         try {
-            return objects.readMember(receiver, asMember.execute(name));
+            Object obj = objects.readMember(receiver, asMember.execute(name));
+            if(obj instanceof SLFunction){
+                ((SLFunction) obj).setSelf(receiver);
+            }
+            return obj;
         } catch (UnsupportedMessageException | UnknownIdentifierException e) {
             // read was not successful. In SL we only have basic support for errors.
             throw SLUndefinedNameException.undefinedProperty(this, name);
         }
     }
 
+
     @Fallback
+    @CompilerDirectives.TruffleBoundary
     public Object typeError(Object receiver,Object name){
         if(receiver instanceof SLNull){
             throw new SLException("Receiver cannot be null",this);

@@ -43,6 +43,7 @@ package com.oracle.truffle.sl.runtime;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
+import java.sql.DriverManager;
 import java.util.Collections;
 import java.util.List;
 

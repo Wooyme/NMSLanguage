@@ -1,4 +1,8 @@
 load "language/tests/LoadTest.nmsl";
 fn main(){
     test();
+        a = {x:"",y:{this,z:
+            print(z+"\n");
+        }};
+        a.y("Hello");
 }

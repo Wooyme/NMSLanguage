@@ -2,6 +2,7 @@ package com.oracle.truffle.sl.nodes.expression;
 
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.sl.launcher.SLMain;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 
 import java.util.HashMap;
@@ -11,7 +12,7 @@ public class SLReadGlobalContextNode extends SLExpressionNode {
     private static final HashMap<String, Class> map = new HashMap<>();
 
     public static void addGlobal(String name,String clazzName) throws ClassNotFoundException {
-        Class clazz = SLReadGlobalContextNode.class.getClassLoader().loadClass(clazzName);
+        Class clazz = Class.forName(clazzName);
         map.put(name,clazz);
     }
 

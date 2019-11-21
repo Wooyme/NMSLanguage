@@ -3,24 +3,20 @@ package com.oracle.truffle.sl.runtime;
 import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.object.DynamicObject;
+import com.oracle.truffle.sl.SLLanguage;
 
 import java.lang.reflect.Proxy;
-import java.util.LinkedHashSet;
-import java.util.Random;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 
 public class SLProxy {
-    private static ConcurrentHashMap<Object,DynamicObject> objectMap = new ConcurrentHashMap<>();
-    private static Set<Integer> hashSet = new LinkedHashSet<>();
+    private static Map<Object,DynamicObject> objectMap = new WeakHashMap<>();
     private static Random random = new Random();
     public static  Object getProxy(DynamicObject obj, String ifName, InteropLibrary values, IndirectCallNode callNode) throws ClassNotFoundException {
         ClassLoader classLoader = SLProxy.class.getClassLoader();
         int _hashCode = random.nextInt();
-        while(hashSet.contains(_hashCode)){
+        while(objectMap.keySet().contains(_hashCode)){
             _hashCode = random.nextInt();
         }
-        hashSet.add(_hashCode);
         final int hashCode = _hashCode;
         Object object = Proxy.newProxyInstance(classLoader, new Class[]{classLoader.loadClass(ifName)}, (proxy, method, args) -> {
             String methodName = method.getName();
@@ -53,7 +49,7 @@ public class SLProxy {
                     if (objectMap.containsKey(args[i])) {
                         args1[offset + i] = objectMap.get(args[i]);
                     } else {
-                        args1[offset + i] = args[i];
+                        args1[offset + i] = SLLanguage.toLanguageObject(args[i]);
                     }
                 }
             }
@@ -75,6 +71,5 @@ public class SLProxy {
 
     public static void delete(Object object){
         objectMap.remove(object);
-        hashSet.remove(object.hashCode());
     }
 }

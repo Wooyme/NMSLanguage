@@ -88,7 +88,7 @@ public final class SLObjectType extends ObjectType {
     @ExportMessage static boolean hasArrayElements(DynamicObject receiver) { return false; }
     @ExportMessage
     @SuppressWarnings("unused")
-    static boolean hasMembers(DynamicObject receiver) {
+        static boolean hasMembers(DynamicObject receiver) {
         return true;
     }
 

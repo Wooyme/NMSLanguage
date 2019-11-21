@@ -85,10 +85,14 @@ public final class SLFunction implements TruffleObject {
 
     private static final TruffleLogger LOG = TruffleLogger.getLogger(SLLanguage.ID, SLFunction.class);
 
-    /** The name of the function. */
+    /**
+     * The name of the function.
+     */
     private final String name;
 
-    /** The current implementation of this function. */
+    /**
+     * The current implementation of this function.
+     */
     private RootCallTarget callTarget;
 
     /**
@@ -97,14 +101,17 @@ public final class SLFunction implements TruffleObject {
      * one gets invalidated.
      */
     private final CyclicAssumption callTargetStable;
-    private final Object ctx;
+    private Object ctx;
+    private Object self = null;
+
     protected SLFunction(SLLanguage language, String name) {
         this.name = name;
         this.callTarget = Truffle.getRuntime().createCallTarget(new SLUndefinedFunctionRootNode(language, name));
         this.callTargetStable = new CyclicAssumption(name);
         this.ctx = null;
     }
-    protected SLFunction(SLLanguage language,String name,Object ctx){
+
+    protected SLFunction(SLLanguage language, String name, Object ctx) {
         this.name = name;
         this.callTarget = Truffle.getRuntime().createCallTarget(new SLUndefinedFunctionRootNode(language, name));
         this.callTargetStable = new CyclicAssumption(name);
@@ -159,8 +166,20 @@ public final class SLFunction implements TruffleObject {
         return true;
     }
 
+    public void setCtx(Object ctx) {
+        this.ctx = ctx;
+    }
+
     public Object getCtx() {
         return ctx;
+    }
+
+    public Object getSelf() {
+        return self;
+    }
+
+    public void setSelf(Object self) {
+        this.self = self;
     }
 
     /**
@@ -200,34 +219,43 @@ public final class SLFunction implements TruffleObject {
          * execution.
          * </p>
          *
+         * @param function     the dynamically provided function
+         * @param cachedTarget the cached function of the specialization instance
+         * @param callNode     the {@link DirectCallNode} specifically created for the
+         *                     {@link CallTarget} in cachedFunction.
          * @see Cached
          * @see Specialization
-         *
-         * @param function the dynamically provided function
-         * @param cachedTarget the cached function of the specialization instance
-         * @param callNode the {@link DirectCallNode} specifically created for the
-         *            {@link CallTarget} in cachedFunction.
          */
         @Specialization(limit = "INLINE_CACHE_SIZE", //
-                        guards = "function.getCallTarget() == cachedTarget", //
-                        assumptions = "callTargetStable")
+                guards = "function.getCallTarget() == cachedTarget", //
+                assumptions = "callTargetStable")
         @SuppressWarnings("unused")
         protected static Object doDirect(SLFunction function, Object[] arguments,
-                        @Cached("function.getCallTargetStable()") Assumption callTargetStable,
-                        @Cached("function.getCallTarget()") RootCallTarget cachedTarget,
-                        @Cached("create(cachedTarget)") DirectCallNode callNode) {
+                                         @Cached("function.getCallTargetStable()") Assumption callTargetStable,
+                                         @Cached("function.getCallTarget()") RootCallTarget cachedTarget,
+                                         @Cached("create(cachedTarget)") DirectCallNode callNode) {
 
             /* Inline cache hit, we are safe to execute the cached call target. */
             Object returnValue;
-            if(function.getCtx()==null){
-                returnValue = callNode.call(arguments);
-            }else{
-                Object[] argWithCtx = new Object[arguments.length+1];
-                argWithCtx[0] = function.getCtx();
-                System.arraycopy(arguments, 0, argWithCtx, 1, arguments.length);
-                returnValue = callNode.call(argWithCtx);
+            if (function.getCtx() == null && function.getSelf() == null) return callNode.call(arguments);
+            return callNode.call(addCtxAndSelf(function, arguments));
+        }
+
+        private static Object[] addCtxAndSelf(SLFunction function, Object[] arguments) {
+            int padding = 0;
+            if (function.getCtx() != null) {
+                padding += 1;
             }
-            return returnValue;
+            if (function.getSelf() != null) {
+                padding += 1;
+            }
+            Object[] args = new Object[arguments.length + padding];
+            args[0] = function.getCtx();
+            if (padding > 1) {
+                args[1] = function.getSelf();
+            }
+            System.arraycopy(arguments, 0, args, padding, arguments.length);
+            return args;
         }
 
         /**
@@ -237,20 +265,14 @@ public final class SLFunction implements TruffleObject {
          */
         @Specialization(replaces = "doDirect")
         protected static Object doIndirect(SLFunction function, Object[] arguments,
-                        @Cached IndirectCallNode callNode) {
+                                           @Cached IndirectCallNode callNode) {
             /*
              * SL has a quite simple call lookup: just ask the function for the current call target,
              * and call it.
              */
-            if(function.getCtx()==null){
+            if (function.getCtx() == null && function.getSelf() == null)
                 return callNode.call(function.getCallTarget(), arguments);
-            }else{
-                Object[] argWithCtx = new Object[arguments.length+1];
-                argWithCtx[0] = function.getCtx();
-                System.arraycopy(arguments, 0, argWithCtx, 1, arguments.length);
-                return callNode.call(function.getCallTarget(), argWithCtx);
-            }
-
+            return callNode.call(function.getCallTarget(), addCtxAndSelf(function, arguments));
         }
     }
 

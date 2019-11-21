@@ -481,7 +481,6 @@ public class SLNodeFactory {
         if(thisNode!=null)
             parameterNodes.add(0,thisNode);
         final SLExpressionNode result = new SLInvokeNode(functionNode, parameterNodes.toArray(new SLExpressionNode[parameterNodes.size()]));
-
         final int startPos = functionNode.getSourceCharIndex();
         if(finalToken!=null) {
             final int endPos = finalToken.getStartIndex() + finalToken.getText().length();
@@ -560,7 +559,7 @@ public class SLNodeFactory {
         }else if (frameSlot != null) {
             /* Read of a local variable. */
 //            result = SLReadLocalVariableNodeGen.create(frameSlot);
-            result = createReadProperty(context,nameNode);
+            result = SLReadContextPropertyNodeGen.create(context,nameNode);
         } else {
             /* Read of a global name. In our language, the only global names are functions. */
             result = new SLFunctionLiteralNode(language, name);

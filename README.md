@@ -146,7 +146,7 @@ fn main(){
 ```
 context的复制不是深拷贝，所以y内部的属性可以修改
 
-## Multiple Thead
+## Multiple Thread
 ```nmsl
 Thread = import "java.lang.Thread";
 fn main(){

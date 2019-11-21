@@ -40,12 +40,10 @@
  */
 package com.oracle.truffle.sl;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+import java.lang.reflect.Array;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.*;
 
 import com.oracle.truffle.api.CallTarget;
 import com.oracle.truffle.api.CompilerDirectives;
@@ -102,11 +100,7 @@ import com.oracle.truffle.sl.nodes.local.SLWriteLocalVariableNode;
 import com.oracle.truffle.sl.parser.SLNodeFactory;
 import com.oracle.truffle.sl.parser.SimpleLanguageLexer;
 import com.oracle.truffle.sl.parser.SimpleLanguageParser;
-import com.oracle.truffle.sl.runtime.SLBigNumber;
-import com.oracle.truffle.sl.runtime.SLContext;
-import com.oracle.truffle.sl.runtime.SLFunction;
-import com.oracle.truffle.sl.runtime.SLFunctionRegistry;
-import com.oracle.truffle.sl.runtime.SLNull;
+import com.oracle.truffle.sl.runtime.*;
 
 /**
  * SL is a simple language to demonstrate and showcase features of Truffle. The implementation is as
@@ -202,6 +196,30 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
         counter++;
     }
 
+    public static Object toLanguageObject(Object any){
+        if(any==null)
+            return SLNull.SINGLETON;
+        if(any instanceof Integer){
+            return new SLBigNumber(new BigDecimal((Integer) any));
+        }else if(any instanceof Long){
+            return new SLBigNumber(new BigDecimal((Long) any));
+        }else if(any instanceof Float){
+            return new SLBigNumber(new BigDecimal((Float) any));
+        }else if(any instanceof Double){
+            return new SLBigNumber(new BigDecimal((Double) any));
+        }else if(any instanceof BigInteger){
+            return new SLBigNumber(new BigDecimal((BigInteger) any));
+        }else if(any instanceof BigDecimal){
+            return new SLBigNumber((BigDecimal) any);
+        }else if(any instanceof Array){
+            return new LinkedList<>(Arrays.asList((Object[]) any));
+        }else if( SLProxy.getRaw(any)!=null ||any instanceof String || any instanceof List || any instanceof Boolean || any instanceof TruffleObject || any instanceof SLObjectType || any instanceof SLReflection){
+            return any;
+        }else{
+            return new SLReflection(any);
+        }
+    }
+
     @Override
     protected SLContext createContext(Env env) {
         return new SLContext(this, env, new ArrayList<>(EXTERNAL_BUILTINS));
@@ -282,6 +300,8 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
             return false;
         }
     }
+
+
 
     @Override
     protected String toString(SLContext context, Object value) {

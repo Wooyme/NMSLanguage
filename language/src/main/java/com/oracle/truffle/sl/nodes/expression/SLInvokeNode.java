@@ -50,6 +50,8 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.sl.SLException;
+import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.runtime.SLFunction;
 import com.oracle.truffle.sl.runtime.SLReflection;
@@ -68,7 +70,6 @@ public final class SLInvokeNode extends SLExpressionNode {
     @Child private SLExpressionNode functionNode;
     @Children private final SLExpressionNode[] argumentNodes;
     @Child private InteropLibrary library;
-
     public SLInvokeNode(SLExpressionNode functionNode, SLExpressionNode[] argumentNodes) {
         this.functionNode = functionNode;
         this.argumentNodes = argumentNodes;
@@ -100,11 +101,16 @@ public final class SLInvokeNode extends SLExpressionNode {
         }else if(function instanceof SLReflection.SLReflectionMethod){
             try {
                 return ((SLReflection.SLReflectionMethod) function).invoke(argumentValues);
-            } catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException e) {
-                throw SLUndefinedNameException.undefinedFunction(this, function);
+            } catch (NoSuchMethodException | IllegalAccessException e) {
+                throw SLUndefinedNameException.undefinedFunction(this, ((SLReflection.SLReflectionMethod) function).getName());
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e);
             }
         }else{
             try {
+                for (int i = 0; i < argumentValues.length; i++) {
+                    argumentValues[i] = SLLanguage.toLanguageObject(argumentValues[i]);
+                }
                 return library.execute(function, argumentValues);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
                 /* Execute was not successful. */

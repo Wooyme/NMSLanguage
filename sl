@@ -4,7 +4,7 @@ VERSION="19.2.0"
 
 MAIN_CLASS="com.oracle.truffle.sl.launcher.SLMain"
 SCRIPT_HOME="$(cd "$(dirname "$0")" && pwd -P)"
-
+MYLIBS=$(echo $PWD/libs/*.jar | tr ' ' ':');
 #######################################################################
 # Locations of the language and launcher jars as well as the java command are
 # different if I'm running from the repository or as a component in GraalVM
@@ -70,7 +70,7 @@ if [[ "$GRAALVM_VERSION" != "" ]]; then
             PROGRAM_ARGS+=("$opt") ;;
       esac
     done
-    "$JAVACMD" "${JAVA_ARGS[@]}" -Dtruffle.class.path.append="$LANGUAGE_PATH" -cp "$LAUNCHER_PATH" "$MAIN_CLASS" "${PROGRAM_ARGS[@]}"
+    "$JAVACMD" "${JAVA_ARGS[@]}" -Dtruffle.class.path.append="$LANGUAGE_PATH:$MYLIBS" -cp "$LAUNCHER_PATH" "$MAIN_CLASS" "${PROGRAM_ARGS[@]}"
 else
     echo "Warning: Could not find GraalVM on $JAVA_HOME. Running on JDK without support for compilation."
     echo

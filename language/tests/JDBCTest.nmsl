@@ -1,0 +1,12 @@
+mysql = import "com.mysql.cj.jdbc.Driver";
+DM = import "java.sql.DriverManager";
+fn main(){
+    conn = DM.getConnection("jdbc:mysql://link.hdussta.cn/sstalink","root","Admin88888");
+    stmt = conn.createStatement();
+    rs = stmt.executeQuery("select * from sstalink_device limit 0,20");
+    while(rs.next()){
+        print(rs.getString("deviceId")+"\n");
+    }
+    rs.close();
+    stmt.close();
+}

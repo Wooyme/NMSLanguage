@@ -48,6 +48,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.sl.SLException;
 
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Built-in function that queries the size property of a foreign object. See
@@ -57,7 +58,7 @@ import java.util.LinkedList;
 public abstract class SLGetSizeBuiltin extends SLBuiltinNode {
 
     @Specialization(limit = "3")
-    public Object getSize(LinkedList list){
+    public Object getSize(List list){
         return list.size();
     }
 
