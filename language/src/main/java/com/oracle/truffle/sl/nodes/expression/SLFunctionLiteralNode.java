@@ -92,6 +92,10 @@ public final class SLFunctionLiteralNode extends SLExpressionNode {
         this.callTarget = callTarget;
     }
 
+    public String getFunctionName(){
+        return this.functionName;
+    }
+
     @Override
     public SLFunction executeGeneric(VirtualFrame frame) {
         if (cachedFunction == null) {

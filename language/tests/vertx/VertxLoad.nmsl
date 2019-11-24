@@ -1,0 +1,13 @@
+Vertx = import "io.vertx.core.Vertx";
+Router = import "io.vertx.ext.web.Router";
+JDBC = import "io.vertx.ext.jdbc.JDBCClient";
+Json = import "io.vertx.core.json.JsonObject";
+Buffer = import "io.vertx.core.buffer.Buffer";
+Handler = import "io.vertx.core.Handler";
+
+fn+ io_vertx_core_json_JsonObject_read(this,name){
+    return this.getValue(name);
+}
+fn+ io_vertx_core_http_HttpServerRequest_read(this,name){
+    return this.getParam(name);
+}

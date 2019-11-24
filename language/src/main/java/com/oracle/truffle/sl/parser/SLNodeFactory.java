@@ -56,6 +56,7 @@ import com.oracle.truffle.sl.nodes.expression.*;
 import com.oracle.truffle.sl.nodes.local.*;
 import com.oracle.truffle.sl.nodes.util.SLUnboxNodeGen;
 import com.oracle.truffle.sl.runtime.SLFunctionRegistry;
+import com.oracle.truffle.sl.runtime.SLReflection;
 import org.antlr.v4.runtime.Parser;
 import org.antlr.v4.runtime.Token;
 
@@ -195,8 +196,10 @@ public class SLNodeFactory {
         methodNodes.add(assignment);
         parameterCount++;
     }
-    public void finishFunction(SLStatementNode bodyNode){
-        finishFunction(bodyNode,null);
+    public void finishFunction(SLStatementNode bodyNode,boolean isOverwrite){
+        SLFunctionLiteralNode node = finishFunction(bodyNode,null);
+        if(isOverwrite)
+            SLReflection.addOperation(node);
     }
     public SLFunctionLiteralNode finishFunction(SLStatementNode bodyNode,HashMap<String,Object> oldEnv) {
         SLFunctionLiteralNode functionNode = null;

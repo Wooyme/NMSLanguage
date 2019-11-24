@@ -49,11 +49,14 @@ import com.oracle.truffle.api.interop.InteropLibrary;
 import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
+import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.sl.SLException;
 import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.runtime.SLFunction;
+import com.oracle.truffle.sl.runtime.SLProxy;
 import com.oracle.truffle.sl.runtime.SLReflection;
 import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
 
@@ -70,10 +73,12 @@ public final class SLInvokeNode extends SLExpressionNode {
     @Child private SLExpressionNode functionNode;
     @Children private final SLExpressionNode[] argumentNodes;
     @Child private InteropLibrary library;
+    @Child private IndirectCallNode callNode;
     public SLInvokeNode(SLExpressionNode functionNode, SLExpressionNode[] argumentNodes) {
         this.functionNode = functionNode;
         this.argumentNodes = argumentNodes;
         this.library = InteropLibrary.getFactory().createDispatched(3);
+        this.callNode = IndirectCallNode.create();
     }
 
     @ExplodeLoop
@@ -94,6 +99,10 @@ public final class SLInvokeNode extends SLExpressionNode {
         }
         if(function instanceof Class){
             try {
+                if(((Class) function).isInterface()){
+                    assert argumentValues.length>0;
+                    return SLProxy.getProxy((DynamicObject) argumentValues[0],(Class) function,library,callNode);
+                }
                 return new SLReflection((Class) function,argumentValues);
             } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException | InstantiationException e) {
                 throw SLUndefinedNameException.undefinedFunction(this, function);

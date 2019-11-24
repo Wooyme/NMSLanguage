@@ -45,6 +45,7 @@ import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
+import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
@@ -103,10 +104,10 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
     }
 
     @Specialization(limit = "LIBRARY_LIMIT")
-    protected Object readObject(SLReflection obj,Object name,@Cached SLToMemberNode asMember){
+    protected Object readObject(VirtualFrame frame, SLReflection obj, Object name,@Cached SLToMemberNode asMember){
         try {
-            return obj.readProperty(asMember.execute(name));
-        } catch (UnknownIdentifierException e) {
+            return obj.readProperty(asMember.execute(name),frame);
+        } catch (UnknownIdentifierException | UnsupportedMessageException | ArityException | UnsupportedTypeException | NoSuchMethodException e) {
             throw new SLException(e.getMessage(),this);
         }
     }
@@ -119,7 +120,7 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
             } catch (IllegalAccessException|NoSuchFieldException e) {
                 return new SLReflection.SLReflectionMethod(clazz,asMember.execute(name));
             }
-        }catch (UnknownIdentifierException ex){
+        }catch (UnknownIdentifierException | NoSuchMethodException ex){
             throw SLUndefinedNameException.undefinedProperty(this, name);
         }
     }

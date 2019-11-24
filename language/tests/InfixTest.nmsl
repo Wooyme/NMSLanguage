@@ -1,0 +1,13 @@
+fn main(){
+    c = -1 add 2;
+    c = c add -1;
+    println(c);
+    a = "Hello,";
+    b = "World!";
+    d = a add b;
+    println(d);
+}
+
+fn add(a,b){
+    return a+b;
+}

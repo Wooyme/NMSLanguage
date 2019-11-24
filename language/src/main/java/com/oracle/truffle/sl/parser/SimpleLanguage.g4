@@ -131,8 +131,12 @@ function function* EOF
 
 
 function
-:
-'fn'
+:                                               { boolean isOverwrite; }
+(
+'fn'                                            { isOverwrite = false; }
+|
+'fn+'                                           { isOverwrite = true; }
+)
 IDENTIFIER
 s='('
                                                 { factory.startFunction($IDENTIFIER, $s);}
@@ -144,8 +148,9 @@ s='('
     )*
 )?
 ')'
-body=block[false]                               { factory.finishFunction($body.result); }
+body=block[false]                               { factory.finishFunction($body.result,isOverwrite); }
 ;
+
 
 lambda returns [SLExpressionNode result]
 :
@@ -160,7 +165,7 @@ s='{'                                           { HashMap<String,Object> oldEnv 
 m=':'                                           { factory.startBlock();
                                                   List<SLStatementNode> body = new ArrayList<>(); }
 (
-    statement[false]                    { body.add($statement.result); }
+    statement[false]                            { body.add($statement.result); }
 )*
 e='}'                                           { SLStatementNode bodyResult = factory.finishBlock(body, $m.getStartIndex(), $e.getStopIndex() - $m.getStartIndex() + 1);
                                                   $result = factory.finishFunction(bodyResult,oldEnv);}
@@ -309,10 +314,20 @@ factor returns [SLExpressionNode result]
                                                 { $result = factory.createRead(assignmentName); }
     )
 |
-    STRING_LITERAL                              { $result = factory.createStringLiteral($STRING_LITERAL, true); }
+    STRING_LITERAL                               { SLExpressionNode receiver = factory.createStringLiteral($STRING_LITERAL, true); }
+    (
+        member_expression[receiver,null, null,0] { $result = $member_expression.result; }
+    |
+                                                 { $result = receiver; }
+    )
 |
     sb = '-'?
-    NUMERIC_LITERAL                             { $result = factory.createNumericLiteral($sb,$NUMERIC_LITERAL); }
+    NUMERIC_LITERAL                             { SLExpressionNode receiver = factory.createNumericLiteral($sb,$NUMERIC_LITERAL); }
+    (
+       member_expression[receiver,null, null,0] { $result = $member_expression.result; }
+    |
+                                                { $result = receiver; }
+    )
 |
     '['                                         { LinkedList<SLExpressionNode> list = new LinkedList<>(); }
     (
@@ -386,21 +401,6 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                 { nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
                                                   $result = factory.createReadProperty(receiver, nestedAssignmentName); }
 |
-    IDENTIFIER                                  { if (receiver == null) {
-                                                    receiver = factory.createRead(assignmentName);
-                                                  }
-                                                  nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
-                                                  $result = factory.createRead(nestedAssignmentName);
-                                                }
-    lmbd=lambda
-                                                {
-                                                  List<SLExpressionNode> parameters = new ArrayList<>();
-
-                                                  parameters.add($lmbd.result);
-                                                  $result = factory.createCall($result,receiver, parameters, null);
-                                                }
-
-|
     '['']'                                      { status = 1;
                                                   if (receiver == null) {
                                                      receiver = factory.createRead(assignmentName);
@@ -439,6 +439,20 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                   $result = factory.createRemove(receiver,$expression.result);
                                                 }
     ']'
+|
+    IDENTIFIER                                  { if (receiver == null) {
+                                                    receiver = factory.createRead(assignmentName);
+                                                  }
+                                                  nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
+                                                  $result = factory.createRead(nestedAssignmentName);
+                                                }
+    expr=expression
+                                                {
+                                                  List<SLExpressionNode> parameters = new ArrayList<>();
+
+                                                  parameters.add($expr.result);
+                                                  $result = factory.createCall($result,receiver, parameters, null);
+                                                }
 )
 (
     member_expression[$result, receiver, nestedAssignmentName,status] { $result = $member_expression.result; }

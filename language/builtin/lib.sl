@@ -1,3 +1,8 @@
+fn println(string){
+    print(string);
+    print("\n");
+}
+
 fn forEach(this,lambda){
     arr = members(this);
     if(arr==null){

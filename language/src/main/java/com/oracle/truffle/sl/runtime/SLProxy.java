@@ -11,14 +11,14 @@ import java.util.*;
 public class SLProxy {
     private static Map<Object,DynamicObject> objectMap = new WeakHashMap<>();
     private static Random random = new Random();
-    public static  Object getProxy(DynamicObject obj, String ifName, InteropLibrary values, IndirectCallNode callNode) throws ClassNotFoundException {
+    public static Object getProxy(DynamicObject obj,Class clazz,InteropLibrary values,IndirectCallNode callNode){
         ClassLoader classLoader = SLProxy.class.getClassLoader();
         int _hashCode = random.nextInt();
         while(objectMap.keySet().contains(_hashCode)){
             _hashCode = random.nextInt();
         }
         final int hashCode = _hashCode;
-        Object object = Proxy.newProxyInstance(classLoader, new Class[]{classLoader.loadClass(ifName)}, (proxy, method, args) -> {
+        Object object = Proxy.newProxyInstance(classLoader, new Class[]{clazz}, (proxy, method, args) -> {
             String methodName = method.getName();
             if(methodName.equals("hashCode")){
                 return hashCode;
@@ -63,6 +63,10 @@ public class SLProxy {
         });
         objectMap.put(object,obj);
         return object;
+    }
+    public static  Object getProxy(DynamicObject obj, String ifName, InteropLibrary values, IndirectCallNode callNode) throws ClassNotFoundException {
+        ClassLoader classLoader = SLProxy.class.getClassLoader();
+        return getProxy(obj,classLoader.loadClass(ifName),values,callNode);
     }
 
     public static DynamicObject getRaw(Object object) {

@@ -1,28 +1,38 @@
 package com.oracle.truffle.sl.runtime;
 
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.ArityException;
+import com.oracle.truffle.api.interop.InteropLibrary;
+import com.oracle.truffle.api.interop.UnsupportedMessageException;
+import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.sl.SLLanguage;
+import com.oracle.truffle.sl.nodes.expression.SLFunctionLiteralNode;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 
 public class SLReflection {
-
+    private static HashMap<String, SLFunctionLiteralNode> operationMap = new HashMap<>();
+    public static void addOperation(SLFunctionLiteralNode functionNode){
+        String funcName = functionNode.getFunctionName();
+        operationMap.put(funcName,functionNode);
+    }
     public static class SLReflectionMethod{
         private final Class clazz;
         private final Object obj;
         private final String name;
         private final Method[] methods;
-        public SLReflectionMethod(Class clazz,String name){
+        public SLReflectionMethod(Class clazz,String name) throws NoSuchMethodException {
             this.clazz = clazz;
             this.name = name;
             this.methods = initMethod();
             this.obj = null;
         }
-        public SLReflectionMethod(SLReflection father,String name){
+        public SLReflectionMethod(SLReflection father,String name) throws NoSuchMethodException {
             this.clazz = father.clazz;
             this.obj = father.instance;
             this.name = name;
@@ -42,7 +52,7 @@ public class SLReflection {
             return false;
         }
 
-        private Method[] initMethod(){
+        private Method[] initMethod() throws NoSuchMethodException {
             Method[] methods = this.clazz.getDeclaredMethods();
             LinkedList<Method> filteredMethods = new LinkedList<>();
             for (Method method : methods) {
@@ -50,6 +60,7 @@ public class SLReflection {
                     filteredMethods.add(method);
                 }
             }
+            if(filteredMethods.size()==0) throw new NoSuchMethodException();
             Method[] _methods = new Method[filteredMethods.size()];
             return filteredMethods.toArray(_methods);
         }
@@ -98,10 +109,21 @@ public class SLReflection {
     }
     private final Class<?> clazz;
     private final Object instance;
-
+    private final InteropLibrary library;
+    private final SLFunctionLiteralNode readOp;
     public SLReflection(Object obj){
         this.instance = obj;
         this.clazz = obj.getClass();
+        SLFunctionLiteralNode node;
+        node = operationMap.get(this.clazz.getName().replace(".","_")+"_read");
+        if(node==null){
+            for (Class<?> anInterface : this.clazz.getInterfaces()) {
+                node = operationMap.get(anInterface.getName().replace(".","_")+"_read");
+                if(node!=null) break;
+            }
+        }
+        this.readOp = node;
+        library = InteropLibrary.getFactory().createDispatched(3);
     }
 
     public SLReflection(Class clazz,Object[] args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
@@ -129,13 +151,31 @@ public class SLReflection {
             throw new NoSuchMethodException();
         }
         instance = foundConstructor.newInstance(args);
+        SLFunctionLiteralNode node;
+        node = operationMap.get(this.clazz.getName().replace(".","_")+"_read");
+        if(node==null){
+            for (Class<?> anInterface : this.clazz.getInterfaces()) {
+                node = operationMap.get(anInterface.getName().replace(".","_")+"_read");
+                if(node!=null) break;
+            }
+        }
+        this.readOp = node;
+        library = InteropLibrary.getFactory().createDispatched(3);
     }
 
-    public Object readProperty(String name){
+
+    public Object readProperty(String name, VirtualFrame frame) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, NoSuchMethodException {
         try {
-            return this.clazz.getDeclaredField(name).get(this.instance);
+            Object result;
+            result = this.clazz.getDeclaredField(name).get(this.instance);
+            return SLLanguage.toLanguageObject(result);
         } catch (NoSuchFieldException | IllegalAccessException e ) {
-            return new SLReflectionMethod(this,name);
+            try {
+                return new SLReflectionMethod(this,name);
+            } catch (NoSuchMethodException ex) {
+                if(readOp==null) throw new NoSuchMethodException();
+                return library.execute(readOp.executeGeneric(frame),this,name);
+            }
         }
     }
 }
