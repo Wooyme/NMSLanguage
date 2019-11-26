@@ -27,8 +27,8 @@ mkdir -p "$COMPONENT_DIR/META-INF"
 {
     echo "Bundle-Name: NMSL";
     echo "Bundle-Symbolic-Name: nmsl";
-    echo "Bundle-Version: 19.2.0";
-    echo 'Bundle-RequireCapability: org.graalvm; filter:="(&(graalvm_version=19.2.0)(os_arch=amd64))"';
+    echo "Bundle-Version: 19.3.0";
+    echo 'Bundle-RequireCapability: org.graalvm; filter:="(&(graalvm_version=19.3.0)(os_arch=amd64))"';
     echo "x-GraalVM-Polyglot-Part: True"
 } > "$COMPONENT_DIR/META-INF/MANIFEST.MF"
 

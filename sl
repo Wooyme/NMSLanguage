@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-VERSION="19.2.0"
+VERSION="19.3.0"
 
 MAIN_CLASS="com.oracle.truffle.sl.launcher.SLMain"
 SCRIPT_HOME="$(cd "$(dirname "$0")" && pwd -P)"
@@ -12,7 +12,7 @@ MYLIBS=$(echo $PWD/libs/*.jar | tr ' ' ':');
 #######################################################################
 GRAALVM_VERSION=$(grep "GRAALVM_VERSION" "$SCRIPT_HOME/../release" 2> /dev/null)
 if [[ "$GRAALVM_VERSION" != "" ]]; then
-    LANGUAGE_PATH=""
+    LANGUAGE_PATH="$SCRIPT_HOME/../jre/languages/nmsl/simplelanguage.jar"
     LAUNCHER_PATH="$SCRIPT_HOME/../jre/languages/nmsl/launcher/sl-launcher.jar"
     SYS_PROPERTY="-Dnmsl.library=$SCRIPT_HOME/../jre/languages/nmsl/libs/lib.nmsl"
     JAVACMD="$SCRIPT_HOME/java"

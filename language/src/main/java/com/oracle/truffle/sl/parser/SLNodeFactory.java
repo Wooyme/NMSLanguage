@@ -133,7 +133,7 @@ public class SLNodeFactory {
             fis.read(data);
             fis.close();
             String str = new String(data, StandardCharsets.UTF_8);
-            this.language.getContextReference().get().getFunctionRegistry().register(Source.newBuilder("sl",str,"(load)").build());
+            this.language.getContextReference().get().getFunctionRegistry().register(Source.newBuilder(SLLanguage.ID,str,"(load)").build());
         } catch (IOException e) {
             throw new RuntimeException(e.getMessage());
         }
