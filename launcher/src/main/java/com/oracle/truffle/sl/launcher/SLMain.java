@@ -74,7 +74,7 @@ public final class SLMain {
                 }
             }
         }
-        builtin = Source.newBuilder(SL,new File("language/builtin/lib.sl")).build();
+        builtin = Source.newBuilder(SL,new File(System.getProperty("nmsl.library"))).build();
         if (file == null) {
             // @formatter:off
             source = Source.newBuilder(SL, new InputStreamReader(System.in), "<stdin>").build();

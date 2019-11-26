@@ -5,6 +5,7 @@ VERSION="19.2.0"
 MAIN_CLASS="com.oracle.truffle.sl.launcher.SLMain"
 SCRIPT_HOME="$(cd "$(dirname "$0")" && pwd -P)"
 MYLIBS=$(echo $PWD/libs/*.jar | tr ' ' ':');
+
 #######################################################################
 # Locations of the language and launcher jars as well as the java command are
 # different if I'm running from the repository or as a component in GraalVM
@@ -12,7 +13,8 @@ MYLIBS=$(echo $PWD/libs/*.jar | tr ' ' ':');
 GRAALVM_VERSION=$(grep "GRAALVM_VERSION" "$SCRIPT_HOME/../release" 2> /dev/null)
 if [[ "$GRAALVM_VERSION" != "" ]]; then
     LANGUAGE_PATH=""
-    LAUNCHER_PATH="$SCRIPT_HOME/../jre/languages/sl/launcher/sl-launcher.jar"
+    LAUNCHER_PATH="$SCRIPT_HOME/../jre/languages/nmsl/launcher/sl-launcher.jar"
+    SYS_PROPERTY="-Dnmsl.library=$SCRIPT_HOME/../jre/languages/nmsl/libs/lib.nmsl"
     JAVACMD="$SCRIPT_HOME/java"
     GRAALVM_VERSION=$(echo "$GRAALVM_VERSION" | awk 'BEGIN {FS="="} {print $2}')
     if [[ "$GRAALVM_VERSION" != "$VERSION" ]]; then
@@ -22,6 +24,7 @@ if [[ "$GRAALVM_VERSION" != "" ]]; then
 else
     LANGUAGE_PATH="$SCRIPT_HOME/language/target/simplelanguage.jar"
     LAUNCHER_PATH="$SCRIPT_HOME/launcher/target/launcher-$VERSION-SNAPSHOT.jar"
+    SYS_PROPERTY="-Dnmsl.library=$SCRIPT_HOME/language/builtin/lib.nmsl"
     # Check the GraalVM version in JAVA_HOME
     if [[ "$JAVA_HOME" != "" ]]; then
         GRAALVM_VERSION=$(grep "GRAALVM_VERSION" "$JAVA_HOME"/release)
@@ -70,7 +73,7 @@ if [[ "$GRAALVM_VERSION" != "" ]]; then
             PROGRAM_ARGS+=("$opt") ;;
       esac
     done
-    "$JAVACMD" "${JAVA_ARGS[@]}" -Dtruffle.class.path.append="$LANGUAGE_PATH:$MYLIBS" -cp "$LAUNCHER_PATH" "$MAIN_CLASS" "${PROGRAM_ARGS[@]}"
+    "$JAVACMD" "${JAVA_ARGS[@]}" "$SYS_PROPERTY" -Dtruffle.class.path.append="$LANGUAGE_PATH:$MYLIBS" -cp "$LAUNCHER_PATH" "$MAIN_CLASS" "${PROGRAM_ARGS[@]}"
 else
     echo "Warning: Could not find GraalVM on $JAVA_HOME. Running on JDK without support for compilation."
     echo
