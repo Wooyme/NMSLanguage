@@ -3,8 +3,8 @@ load "language/tests/vertx/VertxLoad.nmsl";
 fn main(){
     stop = {stop:false};
     vertx = Vertx.vertx();
-    client = jdbc(vertx);
-    vertx.createHttpServer().requestHandler(Handler({handle:{this,req:
+    client = vertx jdbc;
+    vertx.createHttpServer().requestHandler({handle:{this,req:
         if(req.action=="stop") {
             stop.stop = true;
             req.response().end(Buffer.buffer("Bye\n"));
@@ -13,19 +13,20 @@ fn main(){
         offset = req.offset;
         limit = req.limit;
         println("Offset:"+offset+" limit:"+limit);
-        client.query("SELECT deviceId FROM sstalink_device LIMIT "+offset+","+limit,Handler({handle:{this,ar:
+        client.query("SELECT deviceId FROM sstalink_device LIMIT "+offset+","+limit,{handle:{this,ar:
             if(ar.succeeded()){
                 ret = {result:""};
                 ar.result().getRows() forEach { v:
-                    println(v.deviceId);
+                    v.deviceId println;
                     ret.result = ret.result+v.deviceId+"\n";
                 };
                 req.response().end(Buffer.buffer(ret.result+"\n"));
             }else{
                 req.response().end(Buffer.buffer("Failed\n"));
             }
-        }}));
-    }})).listen(toInt(8080));
+        }} Handler);
+    }} Handler).listen(8080 toInt);
+
     while(!stop.stop){
         sleep(1000);
     }
@@ -33,9 +34,9 @@ fn main(){
 
 fn jdbc(vertx){
     config = Json();
-    config.put("url","jdbc:mysql://link.hdussta.cn/sstalink");
-    config.put("driver_class","com.mysql.cj.jdbc.Driver");
-    config.put("user","root");
-    config.put("password","Admin88888");
+    config.url = "jdbc:mysql://link.hdussta.cn/sstalink";
+    config.driver_class = "com.mysql.cj.jdbc.Driver";
+    config.user = "root";
+    config.password = "Admin88888";
     return JDBC.createShared(vertx,config);
 }

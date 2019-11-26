@@ -146,13 +146,6 @@ import com.oracle.truffle.sl.runtime.*;
  * <li>Basic control flow statements: {@link SLBlockNode blocks}, {@link SLIfNode if},
  * {@link SLWhileNode while} with {@link SLBreakNode break} and {@link SLContinueNode continue},
  * {@link SLReturnNode return}.
- * <li>Debugging control: {@link SLDebuggerNode debugger} statement uses
- * {@link DebuggerTags#AlwaysHalt} tag to halt the execution when run under the debugger.
- * <li>Function calls: {@link SLInvokeNode invocations} are efficiently implemented with
- * {@link SLDispatchNode polymorphic inline caches}.
- * <li>Object access: {@link SLReadPropertyNode} uses {@link SLReadPropertyCacheNode} as the
- * polymorphic inline cache for property reads. {@link SLWritePropertyNode} uses
- * {@link SLWritePropertyCacheNode} as the polymorphic inline cache for property writes.
  * </ul>
  *
  * <p>
@@ -172,7 +165,7 @@ import com.oracle.truffle.sl.runtime.*;
  * <ul>
  * <li>{@link SLReadlnBuiltin readln}: Read a String from the {@link SLContext#getInput() standard
  * input}.
- * <li>{@link SLPrintBuiltin println}: Write a value to the {@link SLContext#getOutput() standard
+ * <li>{@link com.oracle.truffle.sl.builtins.SLPrintBuiltin println}: Write a value to the {@link SLContext#getOutput() standard
  * output}.
  * <li>{@link SLNanoTimeBuiltin nanoTime}: Returns the value of a high-resolution time, in
  * nanoseconds.
@@ -195,8 +188,7 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
     public SLLanguage() {
         counter++;
     }
-
-    public static Object toLanguageObject(Object any){
+    public static Object toLanguageObject(Object any,Class extra){
         if(any==null)
             return SLNull.SINGLETON;
         if(any instanceof Integer){

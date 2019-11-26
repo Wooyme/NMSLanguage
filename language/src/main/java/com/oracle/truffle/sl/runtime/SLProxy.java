@@ -6,6 +6,7 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.sl.SLLanguage;
 
 import java.lang.reflect.Proxy;
+import java.lang.reflect.Type;
 import java.util.*;
 
 public class SLProxy {
@@ -49,7 +50,7 @@ public class SLProxy {
                     if (objectMap.containsKey(args[i])) {
                         args1[offset + i] = objectMap.get(args[i]);
                     } else {
-                        args1[offset + i] = SLLanguage.toLanguageObject(args[i]);
+                        args1[offset + i] = SLLanguage.toLanguageObject(args[i],method.getParameterTypes()[i]);
                     }
                 }
             }

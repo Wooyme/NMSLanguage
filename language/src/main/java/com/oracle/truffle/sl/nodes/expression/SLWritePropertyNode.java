@@ -43,15 +43,14 @@ package com.oracle.truffle.sl.nodes.expression;
 import com.oracle.truffle.api.dsl.Cached;
 import com.oracle.truffle.api.dsl.NodeChild;
 import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.interop.InteropLibrary;
-import com.oracle.truffle.api.interop.InvalidArrayIndexException;
-import com.oracle.truffle.api.interop.UnknownIdentifierException;
-import com.oracle.truffle.api.interop.UnsupportedMessageException;
-import com.oracle.truffle.api.interop.UnsupportedTypeException;
+import com.oracle.truffle.api.frame.VirtualFrame;
+import com.oracle.truffle.api.interop.*;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.sl.SLException;
 import com.oracle.truffle.sl.nodes.SLExpressionNode;
 import com.oracle.truffle.sl.nodes.util.SLToMemberNode;
+import com.oracle.truffle.sl.runtime.SLReflection;
 import com.oracle.truffle.sl.runtime.SLUndefinedNameException;
 
 import java.util.LinkedList;
@@ -74,6 +73,19 @@ import java.util.List;
 public abstract class SLWritePropertyNode extends SLExpressionNode {
 
     static final int LIBRARY_LIMIT = 3;
+
+    @Specialization(limit = "LIBRARY_LIMIT")
+    protected Object write(VirtualFrame frame, SLReflection receiver, Object index, Object value, @Cached SLToMemberNode asMember){
+        try {
+            receiver.writeProperty(asMember.execute(index),value,frame);
+        } catch (NoSuchMethodException e) {
+            throw SLUndefinedNameException.undefinedProperty(this, index);
+        } catch (UnsupportedTypeException | UnsupportedMessageException | ArityException | UnknownIdentifierException e) {
+            throw new SLException(e.getMessage(),this);
+        }
+        return value;
+    }
+
     @Specialization(limit = "LIBRARY_LIMIT")
     protected Object write(List receiver, Object index, Object value,
                            @CachedLibrary("index") InteropLibrary numbers){

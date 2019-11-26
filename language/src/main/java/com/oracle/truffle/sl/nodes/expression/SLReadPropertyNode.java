@@ -108,7 +108,7 @@ public abstract class SLReadPropertyNode extends SLExpressionNode {
         try {
             return obj.readProperty(asMember.execute(name),frame);
         } catch (UnknownIdentifierException | UnsupportedMessageException | ArityException | UnsupportedTypeException | NoSuchMethodException e) {
-            throw new SLException(e.getMessage(),this);
+            throw SLUndefinedNameException.undefinedProperty(this,e.getMessage());
         }
     }
 

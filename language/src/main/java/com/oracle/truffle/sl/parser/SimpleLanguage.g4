@@ -337,7 +337,12 @@ factor returns [SLExpressionNode result]
             expression                          { list.add($expression.result); }
         )*
     )?
-    arr = ']'                                   { $result = factory.createArray($arr,list); }
+    arr = ']'                                   { SLExpressionNode receiver = factory.createArray($arr,list); }
+    (
+       member_expression[receiver,null, null,0] { $result = $member_expression.result; }
+    |
+                                                { $result = receiver; }
+    )
 |
     '{'                                         { HashMap<Token,SLExpressionNode> map = new HashMap<>(); }
     (
@@ -351,14 +356,24 @@ factor returns [SLExpressionNode result]
             expression                          { map.put($IDENTIFIER,$expression.result); }
         )*
     )?
-    e = '}'                                     { $result = factory.createObject($e,map); }
+    e = '}'                                     { SLExpressionNode receiver = factory.createObject($e,map); }
+    (
+       member_expression[receiver,null, null,0] { $result = $member_expression.result; }
+    |
+                                                { $result = receiver; }
+    )
 |
 
     lmbd=lambda                                 { $result = $lmbd.result; }
 |
     s='('
     expr=expression
-    e=')'                                       { $result = factory.createParenExpression($expr.result, $s.getStartIndex(), $e.getStopIndex() - $s.getStartIndex() + 1); }
+    e=')'                                       { SLExpressionNode receiver = factory.createParenExpression($expr.result, $s.getStartIndex(), $e.getStopIndex() - $s.getStartIndex() + 1); }
+    (
+       member_expression[receiver,null, null,0] { $result = $member_expression.result; }
+    |
+                                                { $result = receiver; }
+    )
 )
 ;
 
@@ -445,14 +460,14 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                   }
                                                   nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
                                                   $result = factory.createRead(nestedAssignmentName);
-                                                }
-    expr=expression
-                                                {
                                                   List<SLExpressionNode> parameters = new ArrayList<>();
-
-                                                  parameters.add($expr.result);
+                                                }
+    (expr=expression                            { parameters.add($expr.result); }
+    )?
+                                                {
                                                   $result = factory.createCall($result,receiver, parameters, null);
                                                 }
+
 )
 (
     member_expression[$result, receiver, nestedAssignmentName,status] { $result = $member_expression.result; }

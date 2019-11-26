@@ -7,159 +7,292 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.sl.SLLanguage;
 import com.oracle.truffle.sl.nodes.expression.SLFunctionLiteralNode;
+import javassist.*;
+import javassist.bytecode.SignatureAttribute;
+import org.graalvm.collections.Pair;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.lang.reflect.*;
 import java.lang.reflect.Modifier;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class SLReflection {
     private static HashMap<String, SLFunctionLiteralNode> operationMap = new HashMap<>();
-    public static void addOperation(SLFunctionLiteralNode functionNode){
+
+    public static void addOperation(SLFunctionLiteralNode functionNode) {
         String funcName = functionNode.getFunctionName();
-        operationMap.put(funcName,functionNode);
+        operationMap.put(funcName, functionNode);
     }
-    public static class SLReflectionMethod{
-        private final Class clazz;
+
+    public static class SLReflectionMethod {
+        private static final Map<String, String> boxing = new HashMap<>();
+        private static final Map<Pair<Class, String>, Map<Method,Callable>> cache = new ConcurrentHashMap<>();
+        private static final Map<Pair<Class, String>, Method[]> cachedMethods = new ConcurrentHashMap<>();
         private final Object obj;
-        private final String name;
+        private final Pair<Class, String> classStringPair;
         private final Method[] methods;
-        public SLReflectionMethod(Class clazz,String name) throws NoSuchMethodException {
-            this.clazz = clazz;
-            this.name = name;
-            this.methods = initMethod();
-            this.obj = null;
-        }
-        public SLReflectionMethod(SLReflection father,String name) throws NoSuchMethodException {
-            this.clazz = father.clazz;
-            this.obj = father.instance;
-            this.name = name;
-            this.methods = initMethod();
+        private final Map<Method,Callable> callableCache;
+
+        static {
+            boxing.put("int", "Integer");
+            boxing.put("long", "Long");
+            boxing.put("double", "Double");
+            boxing.put("boolean", "Boolean");
+            boxing.put("float", "Float");
+            boxing.put("char", "Char");
+            boxing.put("short", "Short");
+            boxing.put("byte", "Byte");
         }
 
-        private static boolean primitiveEqual(Class clazz,Object obj){
-            if(!clazz.isPrimitive()) return false;
-            if(clazz.getName().equals("int") && obj instanceof Integer) return true;
-            if(clazz.getName().equals("long") && obj instanceof Long) return true;
-            if(clazz.getName().equals("double") && obj instanceof Double) return true;
-            if(clazz.getName().equals("boolean") && obj instanceof Boolean) return true;
-            if(clazz.getName().equals("float") && obj instanceof Float) return true;
-            if(clazz.getName().equals("char") && obj instanceof Character) return true;
-            if(clazz.getName().equals("short") && obj instanceof Short) return true;
-            if(clazz.getName().equals("byte") && obj instanceof Byte) return true;
+        public SLReflectionMethod(Class clazz, String name) throws NoSuchMethodException {
+            Pair<Method[], Class> pair = initMethod(clazz, name);
+            this.methods = pair.getLeft();
+            this.classStringPair = Pair.create(pair.getRight(), name);
+            this.obj = null;
+            if (cache.containsKey(this.classStringPair)) {
+                this.callableCache = cache.get(this.classStringPair);
+            } else {
+                this.callableCache = new ConcurrentHashMap<>();
+                cache.put(this.classStringPair, callableCache);
+
+            }
+        }
+
+        public SLReflectionMethod(SLReflection father, String name) throws NoSuchMethodException {
+            this.obj = father.instance;
+            Pair<Method[], Class> pair = initMethod(father.clazz, name);
+            this.methods = pair.getLeft();
+            this.classStringPair = Pair.create(pair.getRight(), name);
+            if (cache.containsKey(this.classStringPair)) {
+                this.callableCache = cache.get(this.classStringPair);
+            } else {
+                this.callableCache = new ConcurrentHashMap<>();
+                cache.put(this.classStringPair, callableCache);
+
+            }
+        }
+
+        private static boolean primitiveEqual(Class clazz, Object obj) {
+            if (!clazz.isPrimitive()) return false;
+            if (clazz.getName().equals("int") && obj instanceof Integer) return true;
+            if (clazz.getName().equals("long") && obj instanceof Long) return true;
+            if (clazz.getName().equals("double") && obj instanceof Double) return true;
+            if (clazz.getName().equals("boolean") && obj instanceof Boolean) return true;
+            if (clazz.getName().equals("float") && obj instanceof Float) return true;
+            if (clazz.getName().equals("char") && obj instanceof Character) return true;
+            if (clazz.getName().equals("short") && obj instanceof Short) return true;
+            if (clazz.getName().equals("byte") && obj instanceof Byte) return true;
             return false;
         }
 
-        private Method[] initMethod() throws NoSuchMethodException {
-            Method[] methods = this.clazz.getDeclaredMethods();
-            LinkedList<Method> filteredMethods = new LinkedList<>();
-            for (Method method : methods) {
-                if(method.getName().equals(this.name) && Modifier.isPublic(method.getModifiers())){
-                    filteredMethods.add(method);
-                }
-            }
-            if(filteredMethods.size()==0) throw new NoSuchMethodException();
-            Method[] _methods = new Method[filteredMethods.size()];
-            return filteredMethods.toArray(_methods);
-        }
 
-        public Object invoke(Object[] args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
-            Method foundMethod = null;
-            for (int i = 0; i < methods.length; i++) {
-                final Method method = methods[i];
-                if(method.getParameterCount()==args.length){
-                    Class[] params = method.getParameterTypes();
-                    boolean _result = true;
-                    if(params.length != 0) {
-                        for (int j = 0; j < params.length; j++) {
-                            if (!params[j].isInstance(args[j])
-                                    && !primitiveEqual(params[j],args[j])
-                                    && (!(args[j] instanceof SLReflection) || !params[j].isAssignableFrom(((SLReflection) args[j]).clazz))
-                                    && params[j] != Object.class) {
-                                _result = false;
-                                break;
-                            }
-                            if(args[j] instanceof SLReflection){
-                                args[j] = ((SLReflection)args[j]).instance;
-                            }
+        private Pair<Method[], Class> initMethod(Class clazz, String name) throws NoSuchMethodException {
+            LinkedList<Method> filteredMethods = new LinkedList<>();
+            Class finalClazz = clazz;
+
+            if (Modifier.isPublic(clazz.getModifiers())) {
+                Pair<Class, String> classStringPair = Pair.create(clazz, name);
+                if (cachedMethods.containsKey(classStringPair)) {
+                    return Pair.create(cachedMethods.get(classStringPair), clazz);
+                }
+                Method[] methods = clazz.getDeclaredMethods();
+                for (Method method : methods) {
+                    if (method.getName().equals(name) && Modifier.isPublic(method.getModifiers())) {
+                        filteredMethods.add(method);
+                    }
+                }
+            } else {
+                //Class is not public,so finding public interface implemented by class.
+                for (Class anInterface : clazz.getInterfaces()) {
+                    if (!Modifier.isPublic(anInterface.getModifiers()))
+                        continue;
+                    Pair<Class, String> classStringPair = Pair.create(anInterface, name);
+                    if (cachedMethods.containsKey(classStringPair)) {
+                        return Pair.create(cachedMethods.get(classStringPair), anInterface);
+                    }
+                    Method[] methods = anInterface.getDeclaredMethods();
+                    for (Method method : methods) {
+                        if (method.getName().equals(name) && Modifier.isPublic(method.getModifiers())) {
+                            filteredMethods.add(method);
                         }
                     }
-                    if(_result) {
-                        foundMethod = method;
-                        Method _tmp = methods[0];
-                        methods[0] = foundMethod; //提高优先级，下次搜索的时候只需要一次循环.
-                        methods[i] = _tmp;
+                    if (filteredMethods.size() > 0) {
+                        finalClazz = anInterface;
                         break;
                     }
                 }
             }
-            if(foundMethod==null){
-                throw new NoSuchMethodException();
-            }
-            foundMethod.setAccessible(true);
-            Object any = foundMethod.invoke(this.obj,args);
-            return SLLanguage.toLanguageObject(any);
+            if (filteredMethods.size() == 0) throw new NoSuchMethodException();
+            Method[] _methods = new Method[filteredMethods.size()];
+            cachedMethods.put(Pair.create(finalClazz, name), filteredMethods.toArray(_methods));
+            return Pair.create(filteredMethods.toArray(_methods), finalClazz);
         }
 
-        public String getName(){
-            return this.name;
+        public Object invoke(Object[] args) throws NoSuchMethodException, InvocationTargetException, IllegalAccessException {
+            Method foundMethod = null;
+            for (Method method : callableCache.keySet()) {
+                if (detectMethod(method, args)) {
+                    foundMethod = method;
+                    break;
+                }
+            }
+            if (foundMethod == null) {
+                for (final Method method : methods) {
+                    if (detectMethod(method, args)) {
+                        foundMethod = method;
+                        break;
+                    }
+                }
+            }
+            if (foundMethod == null) throw new NoSuchMethodException();
+            foundMethod.setAccessible(true);
+            Object any;
+            try {
+                if (this.obj != null) {
+                    if (!callableCache.containsKey(foundMethod))
+                        any = createCache(foundMethod).execute(this.obj, args);
+                    else
+                        any = callableCache.get(foundMethod).execute(this.obj, args);
+                } else {
+                    any = foundMethod.invoke(null, args);
+                }
+            } catch (NotFoundException | CannotCompileException | InstantiationException e) {
+                any = foundMethod.invoke(this.obj, args);
+            }
+            return SLLanguage.toLanguageObject(any, foundMethod.getReturnType());
+        }
+
+        private static boolean detectMethod(Method method, Object[] args) {
+            if (method.getParameterCount() == args.length) {
+                Class[] params = method.getParameterTypes();
+                boolean _result = true;
+                if (params.length != 0) {
+                    for (int j = 0; j < params.length; j++) {
+                        if (!params[j].isInstance(args[j])
+                                && !primitiveEqual(params[j], args[j])
+                                && !(args[j] instanceof SLReflection)
+                                && params[j] != Object.class) {
+                            _result = false;
+                            break;
+                        }
+                        if (args[j] instanceof SLReflection) {
+                            args[j] = ((SLReflection) args[j]).instance;
+                        }
+                    }
+                }
+                return _result;
+            } else
+                return false;
+        }
+
+        private Callable createCache(Method foundMethod) throws NotFoundException, CannotCompileException, IllegalAccessException, InstantiationException {
+            StringBuilder arguments = new StringBuilder();
+            Class[] paramTypes = foundMethod.getParameterTypes();
+            for (int i = 0; i < paramTypes.length; i++) {
+                arguments.append("(").append(paramTypes[i].isPrimitive() ? boxing.get(paramTypes[i].getName()) : paramTypes[i].getName()).append(")").append("args[").append(i).append("],");
+            }
+            if (paramTypes.length > 0)
+                arguments.deleteCharAt(arguments.length() - 1);
+            String met = "public Object execute(Object instance,Object[] args) { return (" + (foundMethod.getReturnType().isPrimitive() ? boxing.get(foundMethod.getReturnType().getName()) : "Object") + ")((" + this.classStringPair.getLeft().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + "); }";
+
+            ClassPool cp = ClassPool.getDefault();
+            cp.appendClassPath(new LoaderClassPath(this.getClass().getClassLoader()));
+            CtClass cc = cp.makeClass(this.classStringPair.getLeft().getName() +"$CallTarget$"+ foundMethod.getName() + foundMethod.hashCode());
+            cc.setInterfaces(new CtClass[]{cp.get("com.oracle.truffle.sl.runtime.Callable")});
+            SignatureAttribute.ClassSignature cs = new SignatureAttribute.ClassSignature(null, null,
+                    new SignatureAttribute.ClassType[]{new SignatureAttribute.ClassType("com.oracle.truffle.sl.runtime.Callable")});
+
+            cc.setGenericSignature(cs.encode());
+
+            CtMethod make = CtNewMethod.make(met, cc);
+            cc.addMethod(make);
+
+            Class<Callable> callableClass = (Class<Callable>) cc.toClass(this.getClass().getClassLoader());
+            Callable obj = callableClass.newInstance();
+            callableCache.put(foundMethod, obj);
+            return obj;
+        }
+
+        public String getName() {
+            return this.classStringPair.getRight();
         }
     }
+
     private final Class<?> clazz;
     private final Object instance;
     private final InteropLibrary library;
     private final SLFunctionLiteralNode readOp;
-    public SLReflection(Object obj){
+    private final SLFunctionLiteralNode writeOp;
+
+
+    public SLReflection(Object obj) {
         this.instance = obj;
         this.clazz = obj.getClass();
-        SLFunctionLiteralNode node;
-        node = operationMap.get(this.clazz.getName().replace(".","_")+"_read");
-        if(node==null){
+        SLFunctionLiteralNode readNode, writeNode;
+        readNode = operationMap.get(this.clazz.getName().replace(".", "_") + "_read");
+        writeNode = operationMap.get(this.clazz.getName().replace(".", "_") + "_write");
+        if (readNode == null) {
             for (Class<?> anInterface : this.clazz.getInterfaces()) {
-                node = operationMap.get(anInterface.getName().replace(".","_")+"_read");
-                if(node!=null) break;
+                readNode = operationMap.get(anInterface.getName().replace(".", "_") + "_read");
+                if (readNode != null) break;
             }
         }
-        this.readOp = node;
+        if (writeNode == null) {
+            for (Class<?> anInterface : this.clazz.getInterfaces()) {
+                writeNode = operationMap.get(anInterface.getName().replace(".", "_") + "_write");
+                if (writeNode != null) break;
+            }
+        }
+
+        this.readOp = readNode;
+        this.writeOp = writeNode;
         library = InteropLibrary.getFactory().createDispatched(3);
     }
 
-    public SLReflection(Class clazz,Object[] args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+    public SLReflection(Class clazz, Object[] args) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         this.clazz = clazz;
         Constructor[] constructors = clazz.getConstructors();
         Constructor foundConstructor = null;
         for (int i = 0; i < constructors.length; i++) {
             final Constructor constructor = constructors[i];
-            if(constructor.getParameterCount()==args.length){
+            if (constructor.getParameterCount() == args.length) {
                 Class[] params = constructor.getParameterTypes();
                 boolean _result = true;
                 for (int j = 0; j < params.length; j++) {
-                    if(!params[j].isPrimitive() && params[j]!=args[j].getClass() && params[j]!=args[j].getClass().getInterfaces()[0] && params[j]!=Object.class){
+                    if (!params[j].isPrimitive() && params[j] != args[j].getClass() && params[j] != args[j].getClass().getInterfaces()[0] && params[j] != Object.class) {
                         _result = false;
                         break;
                     }
                 }
-                if(_result) {
+                if (_result) {
                     foundConstructor = constructor;
                     break;
                 }
             }
         }
-        if(foundConstructor==null){
+        if (foundConstructor == null) {
             throw new NoSuchMethodException();
         }
         instance = foundConstructor.newInstance(args);
-        SLFunctionLiteralNode node;
-        node = operationMap.get(this.clazz.getName().replace(".","_")+"_read");
-        if(node==null){
+        SLFunctionLiteralNode readNode, writeNode;
+        readNode = operationMap.get(this.clazz.getName().replace(".", "_") + "_read");
+        writeNode = operationMap.get(this.clazz.getName().replace(".", "_") + "_write");
+        if (readNode == null) {
             for (Class<?> anInterface : this.clazz.getInterfaces()) {
-                node = operationMap.get(anInterface.getName().replace(".","_")+"_read");
-                if(node!=null) break;
+                readNode = operationMap.get(anInterface.getName().replace(".", "_") + "_read");
+                if (readNode != null) break;
             }
         }
-        this.readOp = node;
+        if (writeNode == null) {
+            for (Class<?> anInterface : this.clazz.getInterfaces()) {
+                writeNode = operationMap.get(anInterface.getName().replace(".", "_") + "_write");
+                if (writeNode != null) break;
+            }
+        }
+        this.readOp = readNode;
+        this.writeOp = writeNode;
         library = InteropLibrary.getFactory().createDispatched(3);
     }
 
@@ -167,15 +300,21 @@ public class SLReflection {
     public Object readProperty(String name, VirtualFrame frame) throws UnsupportedMessageException, ArityException, UnsupportedTypeException, NoSuchMethodException {
         try {
             Object result;
-            result = this.clazz.getDeclaredField(name).get(this.instance);
-            return SLLanguage.toLanguageObject(result);
-        } catch (NoSuchFieldException | IllegalAccessException e ) {
+            Field field = this.clazz.getDeclaredField(name);
+            result = field.get(this.instance);
+            return SLLanguage.toLanguageObject(result, field.getType());
+        } catch (NoSuchFieldException | IllegalAccessException e) {
             try {
-                return new SLReflectionMethod(this,name);
+                return new SLReflectionMethod(this, name);
             } catch (NoSuchMethodException ex) {
-                if(readOp==null) throw new NoSuchMethodException();
-                return library.execute(readOp.executeGeneric(frame),this,name);
+                if (readOp == null) throw new NoSuchMethodException();
+                return library.execute(readOp.executeGeneric(frame), this, name);
             }
         }
+    }
+
+    public void writeProperty(String name, Object value, VirtualFrame frame) throws NoSuchMethodException, UnsupportedMessageException, ArityException, UnsupportedTypeException {
+        if (writeOp == null) throw new NoSuchMethodException();
+        library.execute(writeOp.executeGeneric(frame), this, name, value);
     }
 }

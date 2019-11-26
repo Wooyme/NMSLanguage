@@ -118,7 +118,7 @@ public final class SLInvokeNode extends SLExpressionNode {
         }else{
             try {
                 for (int i = 0; i < argumentValues.length; i++) {
-                    argumentValues[i] = SLLanguage.toLanguageObject(argumentValues[i]);
+                    argumentValues[i] = SLLanguage.toLanguageObject(argumentValues[i],null);
                 }
                 return library.execute(function, argumentValues);
             } catch (ArityException | UnsupportedTypeException | UnsupportedMessageException e) {
