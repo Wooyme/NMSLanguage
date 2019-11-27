@@ -9,14 +9,14 @@ fi
 rm -rf COMPONENT_DIR
 
 mkdir -p "$LANGUAGE_PATH"
-cp ../language/target/simplelanguage.jar "$LANGUAGE_PATH"
+cp ../language/target/nmsl.jar "$LANGUAGE_PATH"
 
 mkdir -p "$LANGUAGE_PATH/launcher"
-cp ../launcher/target/sl-launcher.jar "$LANGUAGE_PATH/launcher/"
+cp ../launcher/target/nmsl-launcher.jar "$LANGUAGE_PATH/launcher/"
 mkdir -p "$LANGUAGE_PATH/libs"
 cp ../language/builtin/lib.nmsl "$LANGUAGE_PATH/libs/"
 mkdir -p "$LANGUAGE_PATH/bin"
-cp ../sl $LANGUAGE_PATH/bin/nmsl
+cp ../nmsl $LANGUAGE_PATH/bin/nmsl
 if [[ $INCLUDE_SLNATIVE = "TRUE" ]]; then
     cp ../native/slnative $LANGUAGE_PATH/bin/nmslnative
 fi

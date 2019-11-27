@@ -8,5 +8,5 @@ fi
     -H:EnableURLProtocols=http \
     --macro:truffle --no-fallback --initialize-at-build-time \
     -cp ../language/target/simplelanguage.jar:../launcher/target/launcher-19.2.0-SNAPSHOT.jar \
-    com.oracle.truffle.sl.launcher.SLMain \
+    SLMain \
     slnative

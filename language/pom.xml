@@ -3,11 +3,11 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <parent>
-        <groupId>com.oracle</groupId>
-        <artifactId>simplelanguage-parent</artifactId>
+        <groupId>com.github.wooyme</groupId>
+        <artifactId>nmsl-parent</artifactId>
         <version>19.3.0-SNAPSHOT</version>
     </parent>
-    <artifactId>simplelanguage</artifactId>
+    <artifactId>nmsl</artifactId>
     <build>
         <plugins>
             <!--      <plugin>-->
@@ -60,7 +60,7 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <finalName>simplelanguage</finalName>
+                            <finalName>nmsl</finalName>
                             <artifactSet>
                                 <excludes>
                                     <exclude>junit:junit</exclude>
@@ -116,17 +116,6 @@
             <groupId>org.antlr</groupId>
             <artifactId>antlr4-runtime</artifactId>
             <version>4.7</version>
-        </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.43.Final</version>
-        </dependency>
-        <dependency>
-            <groupId>com.oracle</groupId>
-            <artifactId>launcher</artifactId>
-            <version>19.3.0-SNAPSHOT</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>org.javassist</groupId>
