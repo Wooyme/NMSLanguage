@@ -145,7 +145,6 @@ public final class SLContext {
         installBuiltin(SLNanoTimeBuiltinFactory.getInstance());
         installBuiltin(SLDefineFunctionBuiltinFactory.getInstance());
         installBuiltin(SLStackTraceBuiltinFactory.getInstance());
-        installBuiltin(SLNewObjectBuiltinFactory.getInstance());
         installBuiltin(SLEvalBuiltinFactory.getInstance());
         installBuiltin(SLGetSizeBuiltinFactory.getInstance());
         installBuiltin(SLHasSizeBuiltinFactory.getInstance());
@@ -158,10 +157,8 @@ public final class SLContext {
         installBuiltin(SLCloseBuiltinFactory.getInstance());
         installBuiltin(SLReadBuiltinFactory.getInstance());
         installBuiltin(SLSleepBuiltinFactory.getInstance());
-        installBuiltin(SLInterfaceBuiltinFactory.getInstance());
-        installBuiltin(SLToIntNodeFactory.getInstance());
         installBuiltin(SLFromProxyBuiltinFactory.getInstance());
-        installBuiltin(SLUnInterfaceBuiltinFactory.getInstance());
+        installBuiltin(SLToTypeBuiltinFactory.getInstance());
     }
 
     public void installBuiltin(NodeFactory<? extends SLBuiltinNode> factory) {

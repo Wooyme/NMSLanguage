@@ -60,42 +60,22 @@ public final class SLFunctionBodyNode extends SLExpressionNode {
 
     /** The body of the function. */
     @Child private SLStatementNode bodyNode;
-
+    private final String functionName;
     /**
      * Profiling information, collected by the interpreter, capturing whether the function had an
      * {@link SLReturnNode explicit return statement}. This allows the compiler to generate better
      * code.
      */
-    private final BranchProfile exceptionTaken = BranchProfile.create();
-    private final BranchProfile nullTaken = BranchProfile.create();
 
-    public SLFunctionBodyNode(SLStatementNode bodyNode) {
+    public SLFunctionBodyNode(SLStatementNode bodyNode,String functionName) {
         this.bodyNode = bodyNode;
+        this.functionName = functionName;
         addRootTag();
     }
 
     @Override
-    public Object executeGeneric(VirtualFrame frame) {
-        try {
-            /* Execute the function body. */
-            bodyNode.executeVoid(frame);
-
-        } catch (SLReturnException ex) {
-            /*
-             * In the interpreter, record profiling information that the function has an explicit
-             * return.
-             */
-            exceptionTaken.enter();
-            /* The exception transports the actual return value. */
-            return ex.getResult();
-        }
-
-        /*
-         * In the interpreter, record profiling information that the function ends without an
-         * explicit return.
-         */
-        nullTaken.enter();
-        /* Return the default null value. */
-        return SLNull.SINGLETON;
+    public String generate() {
+        return "public class Function"+functionName+"{"
+                +"";
     }
 }

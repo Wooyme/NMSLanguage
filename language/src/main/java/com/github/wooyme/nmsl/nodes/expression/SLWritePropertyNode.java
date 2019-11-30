@@ -40,20 +40,8 @@
  */
 package com.github.wooyme.nmsl.nodes.expression;
 
-import com.github.wooyme.nmsl.SLException;
 import com.github.wooyme.nmsl.nodes.SLExpressionNode;
-import com.github.wooyme.nmsl.nodes.util.SLToMemberNode;
-import com.github.wooyme.nmsl.runtime.SLReflection;
-import com.github.wooyme.nmsl.runtime.SLUndefinedNameException;
-import com.oracle.truffle.api.dsl.Cached;
-import com.oracle.truffle.api.dsl.NodeChild;
-import com.oracle.truffle.api.dsl.Specialization;
-import com.oracle.truffle.api.frame.VirtualFrame;
-import com.oracle.truffle.api.interop.*;
-import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
-
-import java.util.List;
 
 /**
  * The node for writing a property of an object. When executed, this node:
@@ -66,60 +54,19 @@ import java.util.List;
  * </ol>
  */
 @NodeInfo(shortName = ".=")
-@NodeChild("receiverNode")
-@NodeChild("nameNode")
-@NodeChild("valueNode")
-public abstract class SLWritePropertyNode extends SLExpressionNode {
 
-    static final int LIBRARY_LIMIT = 3;
-
-    @Specialization(limit = "LIBRARY_LIMIT")
-    protected Object write(VirtualFrame frame, SLReflection receiver, Object index, Object value, @Cached SLToMemberNode asMember){
-        try {
-            receiver.writeProperty(asMember.execute(index),value,frame);
-        } catch (NoSuchMethodException e) {
-            throw SLUndefinedNameException.undefinedProperty(this, index);
-        } catch (UnsupportedTypeException | UnsupportedMessageException | ArityException | UnknownIdentifierException e) {
-            throw new SLException(e.getMessage(),this);
-        }
-        return value;
+public final class SLWritePropertyNode extends SLExpressionNode {
+    private final SLExpressionNode receiverNode;
+    private final SLExpressionNode nameNode;
+    private final SLExpressionNode valueNode;
+    public SLWritePropertyNode(SLExpressionNode receiverNode,SLExpressionNode nameNode,SLExpressionNode valueNode){
+        this.receiverNode = receiverNode;
+        this.nameNode = nameNode;
+        this.valueNode = valueNode;
     }
 
-    @Specialization(limit = "LIBRARY_LIMIT")
-    protected Object write(List receiver, Object index, Object value,
-                           @CachedLibrary("index") InteropLibrary numbers){
-        try {
-            receiver.set(numbers.asInt(index),value);
-        } catch (UnsupportedMessageException | IndexOutOfBoundsException e) {
-            throw SLUndefinedNameException.undefinedProperty(this, index);
-        }
-        return value;
+    @Override
+    public String generate() {
+        return receiverNode.generate()+".writeProperty("+nameNode.generate()+","+valueNode.generate()+");";
     }
-
-    @Specialization(guards = "arrays.hasArrayElements(receiver)", limit = "LIBRARY_LIMIT")
-    protected Object write(Object receiver, Object index, Object value,
-                    @CachedLibrary("receiver") InteropLibrary arrays,
-                    @CachedLibrary("index") InteropLibrary numbers) {
-        try {
-            arrays.writeArrayElement(receiver, numbers.asLong(index), value);
-        } catch (UnsupportedMessageException | UnsupportedTypeException | InvalidArrayIndexException e) {
-            // read was not successful. In SL we only have basic support for errors.
-            throw SLUndefinedNameException.undefinedProperty(this, index);
-        }
-        return value;
-    }
-
-    @Specialization(limit = "LIBRARY_LIMIT")
-    protected Object write(Object receiver, Object name, Object value,
-                    @CachedLibrary("receiver") InteropLibrary objectLibrary,
-                    @Cached SLToMemberNode asMember) {
-        try {
-            objectLibrary.writeMember(receiver, asMember.execute(name), value);
-        } catch (UnsupportedMessageException | UnknownIdentifierException | UnsupportedTypeException e) {
-            // write was not successful. In SL we only have basic support for errors.
-            throw SLUndefinedNameException.undefinedProperty(this, name);
-        }
-        return value;
-    }
-
 }

@@ -156,7 +156,7 @@ public abstract class SLStatementNode extends Node implements InstrumentableNode
     /**
      * Execute this node as as statement, where no return value is necessary.
      */
-    public abstract void executeVoid(VirtualFrame frame);
+    public void executeVoid(VirtualFrame frame){};
 
     /**
      * Marks this node as being a {@link StandardTags.StatementTag} for instrumentation purposes.
@@ -205,5 +205,7 @@ public abstract class SLStatementNode extends Node implements InstrumentableNode
             return String.format("%s:%d%s", sourceName, startLine, estimated ? "~" : "");
         }
     }
+
+    public abstract String generate();
 
 }

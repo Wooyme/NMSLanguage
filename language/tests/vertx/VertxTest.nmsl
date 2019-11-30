@@ -25,7 +25,7 @@ fn main(){
                 req.response().end(Buffer.buffer("Failed\n"));
             }
         }} Handler);
-    }} Handler).listen(8080 toInt);
+    }} Handler).listen(8080 to "int");
 
     while(!stop.stop){
         sleep(1000);

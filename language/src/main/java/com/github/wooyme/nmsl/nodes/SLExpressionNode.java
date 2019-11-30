@@ -62,23 +62,17 @@ public abstract class SLExpressionNode extends SLStatementNode {
     private boolean hasExpressionTag;
 
     /**
-     * The execute method when no specialization is possible. This is the most general case,
-     * therefore it must be provided by all subclasses.
-     */
-    public abstract Object executeGeneric(VirtualFrame frame);
-
-    /**
      * When we use an expression at places where a {@link SLStatementNode statement} is already
      * sufficient, the return value is just discarded.
      */
     @Override
     public void executeVoid(VirtualFrame frame) {
-        executeGeneric(frame);
+
     }
 
     @Override
     public WrapperNode createWrapper(ProbeNode probe) {
-        return new SLExpressionNodeWrapper(this, probe);
+        return null;
     }
 
     @Override
@@ -103,10 +97,10 @@ public abstract class SLExpressionNode extends SLStatementNode {
      */
 
     public long executeLong(VirtualFrame frame) throws UnexpectedResultException {
-        return SLTypesGen.expectLong(executeGeneric(frame));
+        return 0;
     }
 
     public boolean executeBoolean(VirtualFrame frame) throws UnexpectedResultException {
-        return SLTypesGen.expectBoolean(executeGeneric(frame));
+        return false;
     }
 }

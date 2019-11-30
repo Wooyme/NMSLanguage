@@ -67,25 +67,17 @@ public final class SLBlockNode extends SLStatementNode {
         this.bodyNodes = bodyNodes;
     }
 
-    /**
-     * Execute all child statements. The annotation {@link ExplodeLoop} triggers full unrolling of
-     * the loop during compilation. This allows the {@link SLStatementNode#executeVoid} method of
-     * all children to be inlined.
-     */
-    @Override
-    @ExplodeLoop
-    public void executeVoid(VirtualFrame frame) {
-        /*
-         * This assertion illustrates that the array length is really a constant during compilation.
-         */
-        CompilerAsserts.compilationConstant(bodyNodes.length);
-
-        for (SLStatementNode statement : bodyNodes) {
-            statement.executeVoid(frame);
-        }
-    }
 
     public List<SLStatementNode> getStatements() {
         return Collections.unmodifiableList(Arrays.asList(bodyNodes));
+    }
+
+    @Override
+    public String generate() {
+        StringBuilder sb = new StringBuilder();
+        for (SLStatementNode bodyNode : bodyNodes) {
+            sb.append(bodyNode.generate()).append("\n");
+        }
+        return sb.toString();
     }
 }

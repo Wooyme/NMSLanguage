@@ -655,7 +655,7 @@ public class SLNodeFactory {
             return null;
         }
 
-        final SLExpressionNode result = SLWritePropertyNodeGen.create(receiverNode, nameNode, valueNode);
+        final SLExpressionNode result = new SLWritePropertyNode(receiverNode, nameNode, valueNode);
         if(receiverNode.hasSource()) {
             final int start = receiverNode.getSourceCharIndex();
             final int length = valueNode.getSourceEndIndex() - start;

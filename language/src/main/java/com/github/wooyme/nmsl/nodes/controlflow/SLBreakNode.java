@@ -54,7 +54,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 public final class SLBreakNode extends SLStatementNode {
 
     @Override
-    public void executeVoid(VirtualFrame frame) {
-        throw SLBreakException.SINGLETON;
+    public String generate() {
+        return "break;";
     }
 }
