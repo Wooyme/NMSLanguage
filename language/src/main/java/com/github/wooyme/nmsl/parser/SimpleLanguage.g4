@@ -52,11 +52,9 @@ grammar SimpleLanguage;
 import java.util.*;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.RootCallTarget;
-import SLLanguage;
-import SLExpressionNode;
-import SLRootNode;
-import SLStatementNode;
-import SLParseError;
+import com.github.wooyme.nmsl.SLLanguage;
+import com.github.wooyme.nmsl.nodes.SLExpressionNode;
+import com.github.wooyme.nmsl.nodes.SLStatementNode;
 }
 
 @lexer::header
@@ -166,8 +164,35 @@ m=':'                                           { factory.startBlock();
                                                   List<SLStatementNode> body = new ArrayList<>(); }
 (
     statement[false]                            { body.add($statement.result); }
+    |
+    label_block[false]
 )*
 e='}'                                           { SLStatementNode bodyResult = factory.finishBlock(body, $m.getStartIndex(), $e.getStopIndex() - $m.getStartIndex() + 1);
+                                                  $result = factory.finishFunction(bodyResult,oldEnv);}
+;
+
+label_block[boolean inLoop] returns [SLStatementNode result]
+:
+'await'
+IDENTIFIER                                      { HashMap<String,Object> oldEnv = factory.startLabelLambda($IDENTIFIER,$IDENTIFIER);}
+(
+'->'
+'('
+    IDENTIFIER                                  { factory.addFormalParameter($IDENTIFIER); }
+    (
+        ','
+        IDENTIFIER                              { factory.addFormalParameter($IDENTIFIER); }
+    )*
+')'
+)?
+m=';'                                             { factory.startBlock();
+                                                  List<SLStatementNode> body = new ArrayList<>(); }
+(
+    statement[inLoop]                           { body.add($statement.result); }
+    |
+    label_block[inLoop]
+)*
+                                                { SLStatementNode bodyResult = factory.finishBlock(body, $m.getStartIndex(), 1);
                                                   $result = factory.finishFunction(bodyResult,oldEnv);}
 ;
 
@@ -176,7 +201,9 @@ block [boolean inLoop] returns [SLStatementNode result]
                                                   List<SLStatementNode> body = new ArrayList<>(); }
 s='{'
 (
-    statement[inLoop]                   { body.add($statement.result); }
+    statement[inLoop]                           { body.add($statement.result); }
+    |
+    label_block[inLoop]
 )*
 e='}'
                                                 { $result = factory.finishBlock(body, $s.getStartIndex(), $e.getStopIndex() - $s.getStartIndex() + 1); }
@@ -490,7 +517,7 @@ fragment TAB : '\t';
 fragment STRING_CHAR : '\\\\' | '\\"'| '\\n' | '\\t' | '\\r'| '\\x' | ~( '\\' | '"' | '\r' | '\n');
 
 LOGICAL_LITERAL : 'true' | 'false';
-IDENTIFIER : LETTER (LETTER | DIGIT)*;
+IDENTIFIER : '@'? LETTER (LETTER | DIGIT)*;
 STRING_LITERAL : '"' STRING_CHAR* '"';
 NUMERIC_LITERAL : '0' | NON_ZERO_DIGIT DIGIT* | '0' '.' DIGIT* | NON_ZERO_DIGIT DIGIT* '.' DIGIT*;
 

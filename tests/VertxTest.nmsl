@@ -1,4 +1,4 @@
-load "language/tests/vertx/VertxLoad.nmsl";
+load "VertxLoad.nmsl";
 
 fn main(){
     stop = {stop:false};

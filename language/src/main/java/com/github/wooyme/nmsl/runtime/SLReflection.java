@@ -28,6 +28,8 @@ public class SLReflection {
 
     public static class SLReflectionMethod {
         private static final Map<String, String> boxing = new HashMap<>();
+        private static final Map<String,String> unboxingOperation = new HashMap<>();
+        private static final Map<String,String> boxingOperation = new HashMap<>();
         private static final Map<Pair<Class, String>, Map<Method,Callable>> cache = new ConcurrentHashMap<>();
         private static final Map<Pair<Class, String>, Method[]> cachedMethods = new ConcurrentHashMap<>();
         private final Object obj;
@@ -44,6 +46,23 @@ public class SLReflection {
             boxing.put("char", "Char");
             boxing.put("short", "Short");
             boxing.put("byte", "Byte");
+            unboxingOperation.put("int", "intValue()");
+            unboxingOperation.put("long", "longValue()");
+            unboxingOperation.put("double", "doubleValue()");
+            unboxingOperation.put("boolean", "booleanValue()");
+            unboxingOperation.put("float", "floatValue()");
+            unboxingOperation.put("char", "charValue()");
+            unboxingOperation.put("short", "shortValue()");
+            unboxingOperation.put("byte", "byteValue()");
+
+            boxingOperation.put("int","Integer.valueOf");
+            boxingOperation.put("long","Long.valueOf");
+            boxingOperation.put("double","Double.valueOf");
+            boxingOperation.put("boolean", "Boolean.valueOf");
+            boxingOperation.put("float", "Float.valueOf");
+            boxingOperation.put("char", "Char.valueOf");
+            boxingOperation.put("short", "Short.valueOf");
+            boxingOperation.put("byte", "Byte.valueOf");
         }
 
         public SLReflectionMethod(Class clazz, String name) throws NoSuchMethodException {
@@ -159,7 +178,7 @@ public class SLReflection {
                     any = foundMethod.invoke(null, args);
                 }
             } catch (NotFoundException | CannotCompileException | InstantiationException e) {
-                any = foundMethod.invoke(this.obj, args);
+                throw new RuntimeException(e);
             }
             return SLLanguage.toLanguageObject(any, foundMethod.getReturnType());
         }
@@ -191,18 +210,26 @@ public class SLReflection {
             StringBuilder arguments = new StringBuilder();
             Class[] paramTypes = foundMethod.getParameterTypes();
             for (int i = 0; i < paramTypes.length; i++) {
-                arguments.append("(").append(paramTypes[i].isPrimitive() ? boxing.get(paramTypes[i].getName()) : paramTypes[i].getName()).append(")").append("args[").append(i).append("],");
+                if(paramTypes[i].isPrimitive()){
+                    arguments.append("((").append(boxing.get(paramTypes[i].getName())).append(")").append("args[").append(i).append("]).").append(unboxingOperation.get(paramTypes[i].getName())).append(",");
+                }else
+                    arguments.append("(").append(paramTypes[i].getName()).append(")").append("args[").append(i).append("],");
             }
             if (paramTypes.length > 0)
                 arguments.deleteCharAt(arguments.length() - 1);
-            String met = "public Object execute(Object instance,Object[] args) { return (" + (foundMethod.getReturnType().isPrimitive() ? boxing.get(foundMethod.getReturnType().getName()) : "Object") + ")((" + this.classStringPair.getLeft().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + "); }";
-
+            String met = "public Object execute(Object instance,Object[] args) { ";
+            if(foundMethod.getReturnType().getName().equals("void")){
+                met+="((" + this.classStringPair.getLeft().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + ");" +
+                        "return null; }";
+            }else {
+                met+="return " + (foundMethod.getReturnType().isPrimitive() ? boxingOperation.get(foundMethod.getReturnType().getName()) : "") + "(((" + this.classStringPair.getLeft().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + ")); }";
+            }
             ClassPool cp = ClassPool.getDefault();
             cp.appendClassPath(new LoaderClassPath(this.getClass().getClassLoader()));
             CtClass cc = cp.makeClass(this.classStringPair.getLeft().getName() +"$CallTarget$"+ foundMethod.getName() + foundMethod.hashCode());
-            cc.setInterfaces(new CtClass[]{cp.get("com.oracle.truffle.sl.runtime.Callable")});
+            cc.setInterfaces(new CtClass[]{cp.get("com.github.wooyme.nmsl.runtime.Callable")});
             SignatureAttribute.ClassSignature cs = new SignatureAttribute.ClassSignature(null, null,
-                    new SignatureAttribute.ClassType[]{new SignatureAttribute.ClassType("com.oracle.truffle.sl.runtime.Callable")});
+                    new SignatureAttribute.ClassType[]{new SignatureAttribute.ClassType("com.github.wooyme.nmsl.runtime.Callable")});
 
             cc.setGenericSignature(cs.encode());
 

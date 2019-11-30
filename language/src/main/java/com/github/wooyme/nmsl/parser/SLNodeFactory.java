@@ -94,7 +94,6 @@ public class SLNodeFactory {
     /* State while parsing a source unit. */
     private final Source source;
     private final Map<String, RootCallTarget> allFunctions;
-
     /* State while parsing a function. */
     private int functionStartPos;
     private String functionName;
@@ -150,11 +149,26 @@ public class SLNodeFactory {
         functionBodyStartPos = bodyStartToken.getStartIndex();
         frameDescriptor = new FrameDescriptor();
         methodNodes = new ArrayList<>();
-        this.context = createContext();
+        this.context = createContext(functionName);
         startBlock();
     }
 
     public HashMap<String,Object> startLambda(Token bodyStartToken){
+        byte[] array = new byte[8];
+        new Random().nextBytes(array);
+        array[0]='$';
+        String name = new String(array, Charset.forName("UTF-8"));
+        while(anonymousFunctions.contains(name)){
+            name = new String(array, Charset.forName("UTF-8"));
+        }
+        return startLabelLambda(bodyStartToken,name);
+    }
+
+    public HashMap<String,Object> startLabelLambda(Token bodyStartToken,Token nameToken){
+        return startLabelLambda(bodyStartToken,nameToken.getText());
+    }
+
+    public HashMap<String,Object> startLabelLambda(Token bodyStartToken,String name){
         HashMap<String,Object> oldEnv = new HashMap<>();
         oldEnv.put("functionStartPos",functionStartPos);
         oldEnv.put("functionName",functionName);
@@ -167,21 +181,15 @@ public class SLNodeFactory {
         parameterCount = 0;
 //        lexicalScope = null;
         functionStartPos = functionBodyStartPos = bodyStartToken.getStartIndex();
-        byte[] array = new byte[8]; // length is bounded by 7
-        new Random().nextBytes(array);
-        array[0]='@';
-        String name = new String(array, Charset.forName("UTF-8"));
-        while(anonymousFunctions.contains(name)){
-            name = new String(array, Charset.forName("UTF-8"));
-        }
         anonymousFunctions.add(name);
         functionName = name;
         frameDescriptor = new FrameDescriptor();
         methodNodes = new ArrayList<>();
-        this.context = createContext();
+        this.context = createContext(functionName);
         startBlock();
         return oldEnv;
     }
+
 
     public void addFormalParameter(Token nameToken) {
         /*
@@ -219,7 +227,11 @@ public class SLNodeFactory {
                 functionNode = new SLFunctionLiteralNode(language, functionName);
 
             }else {
-                functionNode = new SLFunctionLiteralNode(language, functionName,Truffle.getRuntime().createCallTarget(rootNode), context);
+                RootCallTarget callTarget = Truffle.getRuntime().createCallTarget(rootNode);
+                functionNode = new SLFunctionLiteralNode(language, functionName, callTarget, context);
+                if(functionName.startsWith("@")){
+                    SLReadGlobalContextNode.addGlobalLabelLamdba(functionName, (String) oldEnv.get("functionName"),functionNode);
+                }
             }
             functionNode.setSourceSection(functionStartPos,bodyEndPos-functionStartPos);
             functionNode.addExpressionTag();
@@ -379,13 +391,13 @@ public class SLNodeFactory {
         return returnNode;
     }
 
-    public SLExpressionNode createContext(){
+    public SLExpressionNode createContext(String func){
         SLExpressionNode getContext;
         if(this.context!=null) {
-            getContext = SLFromContextNodeGen.create(new SLReadArgumentNode(0));
+            getContext = SLFromContextNodeGen.create(new SLReadArgumentNode(0),new SLStringLiteralNode(func));
             this.parameterCount++;
         }else{
-            getContext = SLGetContextNodeGen.create();
+            getContext = SLGetContextNodeGen.create(new SLStringLiteralNode(func));
         }
         FrameSlot frameSlot = frameDescriptor.findOrAddFrameSlot(
                 "context",
@@ -554,8 +566,15 @@ public class SLNodeFactory {
 
         String name = ((SLStringLiteralNode) nameNode).executeGeneric(null);
         final SLExpressionNode result;
+        if(name.startsWith("@")){
+            result = new SLReadGlobalContextNode(name+functionName);
+            result.setSourceSection(nameNode.getSourceCharIndex(), nameNode.getSourceLength());
+            result.addExpressionTag();
+            return result;
+        }
         final FrameSlot frameSlot = lexicalScope.locals.get(name);
         if(SLReadGlobalContextNode.containsName(name)){
+
             result = new SLReadGlobalContextNode(name);
         }else if (frameSlot != null) {
             /* Read of a local variable. */
@@ -721,7 +740,7 @@ public class SLNodeFactory {
         assert clazzName.length() >= 2 && clazzName.startsWith("\"") && clazzName.endsWith("\"");
         clazzName = clazzName.substring(1, clazzName.length() - 1);
         try {
-            SLReadGlobalContextNode.addGlobal(globalName,clazzName);
+            SLReadGlobalContextNode.addGlobalClazz(globalName,clazzName);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e.getMessage());
         }

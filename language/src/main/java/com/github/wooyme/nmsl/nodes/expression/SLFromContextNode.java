@@ -10,14 +10,22 @@ import com.oracle.truffle.api.interop.UnsupportedMessageException;
 import com.oracle.truffle.api.interop.UnsupportedTypeException;
 import com.oracle.truffle.api.library.CachedLibrary;
 import com.oracle.truffle.api.nodes.NodeInfo;
+import com.oracle.truffle.api.object.DynamicObject;
 
 @NodeInfo(shortName = "fromContext")
 @NodeChild(value = "old", type = SLExpressionNode.class)
+@NodeChild(value = "func",type = SLExpressionNode.class)
 public abstract class SLFromContextNode extends SLExpressionNode {
     @Specialization(guards = "!values.isNull(obj)", limit = "3")
-    public Object fromContext(Object obj, @CachedLibrary("obj") InteropLibrary values) {
+    public Object fromContext(Object obj,String func, @CachedLibrary("obj") InteropLibrary values) {
         try {
-            return values.instantiate(obj);
+            DynamicObject result;
+            if(!func.startsWith("@"))
+                result = (DynamicObject) values.instantiate(obj);
+            else
+                result = (DynamicObject) obj;
+            result.set("$func",func);
+            return result;
         } catch (UnsupportedTypeException | ArityException | UnsupportedMessageException e) {
             throw SLUndefinedNameException.undefinedFunction(this, obj);
         }
