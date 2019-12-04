@@ -176,7 +176,7 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
             return new SLBigNumber((BigDecimal) any);
         }else if(any instanceof Array){
             return new LinkedList<>(Arrays.asList((Object[]) any));
-        }else if( SLProxy.getRaw(any)!=null ||any instanceof String || any instanceof List || any instanceof Boolean || any instanceof TruffleObject || any instanceof SLObjectType || any instanceof SLReflection){
+        }else if( SLProxy.getRaw(any)!=null || any instanceof String || any instanceof List || any instanceof Boolean || any instanceof TruffleObject || any instanceof SLObjectType || any instanceof SLReflection){
             return any;
         }else{
             return new SLReflection(any);

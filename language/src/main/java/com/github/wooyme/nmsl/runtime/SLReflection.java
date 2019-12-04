@@ -171,7 +171,7 @@ public class SLReflection {
             try {
                 if (this.obj != null) {
                     if (!callableCache.containsKey(foundMethod))
-                        any = createCache(foundMethod).execute(this.obj, args);
+                        any = createCache(foundMethod,args).execute(this.obj, args);
                     else
                         any = callableCache.get(foundMethod).execute(this.obj, args);
                 } else {
@@ -189,16 +189,16 @@ public class SLReflection {
                 boolean _result = true;
                 if (params.length != 0) {
                     for (int j = 0; j < params.length; j++) {
+                        if (args[j] instanceof SLReflection) {
+                            args[j] = ((SLReflection) args[j]).instance;
+                        }
                         if (!params[j].isInstance(args[j])
                                 && !primitiveEqual(params[j], args[j])
-                                && !(args[j] instanceof SLReflection)
                                 && params[j] != Object.class) {
                             _result = false;
                             break;
                         }
-                        if (args[j] instanceof SLReflection) {
-                            args[j] = ((SLReflection) args[j]).instance;
-                        }
+
                     }
                 }
                 return _result;
@@ -206,14 +206,19 @@ public class SLReflection {
                 return false;
         }
 
-        private Callable createCache(Method foundMethod) throws NotFoundException, CannotCompileException, IllegalAccessException, InstantiationException {
+        private Callable createCache(Method foundMethod,Object[] args) throws NotFoundException, CannotCompileException, IllegalAccessException, InstantiationException {
             StringBuilder arguments = new StringBuilder();
             Class[] paramTypes = foundMethod.getParameterTypes();
             for (int i = 0; i < paramTypes.length; i++) {
                 if(paramTypes[i].isPrimitive()){
                     arguments.append("((").append(boxing.get(paramTypes[i].getName())).append(")").append("args[").append(i).append("]).").append(unboxingOperation.get(paramTypes[i].getName())).append(",");
-                }else
-                    arguments.append("(").append(paramTypes[i].getName()).append(")").append("args[").append(i).append("],");
+                }else {
+                    if(paramTypes[i].getName().equals("java.lang.Object")){
+                        arguments.append("(").append(args[i].getClass().getName()).append(")").append("args[").append(i).append("],");
+                    } else {
+                        arguments.append("(").append(paramTypes[i].getName()).append(")").append("args[").append(i).append("],");
+                    }
+                }
             }
             if (paramTypes.length > 0)
                 arguments.deleteCharAt(arguments.length() - 1);

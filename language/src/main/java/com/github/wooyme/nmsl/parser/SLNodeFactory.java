@@ -157,7 +157,7 @@ public class SLNodeFactory {
         byte[] array = new byte[8];
         new Random().nextBytes(array);
         array[0]='$';
-        String name = new String(array, Charset.forName("UTF-8"));
+        String name = new String(array, Charset.forName("UTF-8")).replace("\\","$");
         while(anonymousFunctions.contains(name)){
             name = new String(array, Charset.forName("UTF-8"));
         }

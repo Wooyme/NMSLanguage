@@ -12,6 +12,10 @@ fn main(){
         }
         offset = req.offset;
         limit = req.limit;
+        if(offset==null || limit==null){
+            req.response().end(Buffer.buffer("Error\n"));
+            return;
+        }
         println("Offset:"+offset+" limit:"+limit);
         client.query("SELECT deviceId FROM sstalink_device LIMIT "+offset+","+limit,{handle:@result} Handler);
         await @result->(this,ar);
@@ -25,7 +29,7 @@ fn main(){
         }else{
             req.response().end(Buffer.buffer("Failed\n"));
         }
-    }} Handler).listen(8080 toInt);
+    }} Handler).listen(8080 to "int");
     while(!stop.stop){
         sleep(1000);
     }
