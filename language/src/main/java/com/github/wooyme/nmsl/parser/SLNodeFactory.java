@@ -619,7 +619,7 @@ public class SLNodeFactory {
             result = new SLLongLiteralNode(Long.parseLong(symbol+literalToken.getText()));
         } catch (NumberFormatException ex) {
             /* Overflow of long value, so fall back to BigInteger. */
-            result = new SLBigIntegerLiteralNode(new BigDecimal(symbolToken+literalToken.getText()));
+            result = new SLBigIntegerLiteralNode(new BigDecimal(symbol+literalToken.getText()));
         }
         srcFromToken(result, literalToken);
         result.addExpressionTag();

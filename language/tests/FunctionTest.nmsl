@@ -1,0 +1,31 @@
+fn main(){
+    a = 1;
+    b = {x:1,y:2};
+    c = {:
+      println(a);
+      println(b.x+b.y);
+      a = 2;
+      b.x = 2;
+    };
+    c();
+    println(a);
+    println(b.x);
+    m = {a:{:
+        println("a");
+        return {b:{:return 2;}};
+      }
+    };
+    println(m.a().b());
+    println("--------");
+
+    println(1->plus1->plus1 plus 2->plus1);
+}
+
+fn plus(x,y){
+    println(y);
+    return y+x;
+}
+
+fn plus1(x){
+    return x+1;
+}

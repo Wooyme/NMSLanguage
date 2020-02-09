@@ -484,16 +484,27 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
 |
     IDENTIFIER                                  { if (receiver == null) {
                                                     receiver = factory.createRead(assignmentName);
+
                                                   }
                                                   nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
                                                   $result = factory.createRead(nestedAssignmentName);
                                                   List<SLExpressionNode> parameters = new ArrayList<>();
                                                 }
     (expr=expression                            { parameters.add($expr.result); }
-    )?
+    )
                                                 {
                                                   $result = factory.createCall($result,receiver, parameters, null);
                                                 }
+|
+    '->'
+    IDENTIFIER                                 {  if (receiver == null) {
+                                                     receiver = factory.createRead(assignmentName);
+                                                  }
+                                                  nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
+                                                  $result = factory.createRead(nestedAssignmentName);
+                                                  List<SLExpressionNode> parameters = new ArrayList<>();
+                                                  $result = factory.createCall($result,receiver, parameters, null);
+                                               }
 
 )
 (

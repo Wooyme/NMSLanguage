@@ -1,0 +1,14 @@
+load "VertxLoad.nmsl";
+fn jdbc(url,user,password,lambda){
+    vertx = Vertx.vertx();
+    config = Json();
+    config.url = url;
+    config.driver_class = "com.mysql.cj.jdbc.Driver";
+    config.user = user;
+    config.password = password;
+    lambda(JDBC.createShared(vertx,config));
+    while(true){
+    	sleep(10000);
+    }
+}
+

@@ -15,7 +15,7 @@ fn query(client){
         ,{handle:@result} Handler);
     await @result->(this,ar);
     if(ar.succeeded()){
-        ar.result().getRows() forEach {v:
+        ar.result().rows forEach {v:
             println(v.COLUMN_NAME);
         };
     }else{

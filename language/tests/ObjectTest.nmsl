@@ -1,0 +1,15 @@
+fn main(){
+    a = {x:1,y:"Hello,World",z:1.0};
+    d = a["x"];
+    e = a.y;
+    println(d);
+    println(a.z+a.y);
+    b = a[-"x"];
+    c = a[-"y"];
+    println(b);
+    println(c);
+    a.h = "World";
+    println(a.h);
+    a1 = new(a);
+    println(a1.h);
+}

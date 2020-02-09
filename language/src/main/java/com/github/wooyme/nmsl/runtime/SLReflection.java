@@ -13,9 +13,7 @@ import org.graalvm.collections.Pair;
 
 import java.lang.reflect.Modifier;
 import java.lang.reflect.*;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SLReflection {
@@ -32,6 +30,7 @@ public class SLReflection {
         private static final Map<String,String> boxingOperation = new HashMap<>();
         private static final Map<Pair<Class, String>, Map<Method,Callable>> cache = new ConcurrentHashMap<>();
         private static final Map<Pair<Class, String>, Method[]> cachedMethods = new ConcurrentHashMap<>();
+        private static final Set<Pair<Class,String>> blackList = new HashSet<>();
         private final Object obj;
         private final Pair<Class, String> classStringPair;
         private final Method[] methods;
@@ -108,15 +107,17 @@ public class SLReflection {
 
 
         private Pair<Method[], Class> initMethod(Class clazz, String name) throws NoSuchMethodException {
+            if(blackList.contains(Pair.create(clazz,name))){
+                throw new NoSuchMethodException();
+            }
             LinkedList<Method> filteredMethods = new LinkedList<>();
             Class finalClazz = clazz;
-
             if (Modifier.isPublic(clazz.getModifiers())) {
                 Pair<Class, String> classStringPair = Pair.create(clazz, name);
                 if (cachedMethods.containsKey(classStringPair)) {
                     return Pair.create(cachedMethods.get(classStringPair), clazz);
                 }
-                Method[] methods = clazz.getDeclaredMethods();
+                Method[] methods = clazz.getMethods();
                 for (Method method : methods) {
                     if (method.getName().equals(name) && Modifier.isPublic(method.getModifiers())) {
                         filteredMethods.add(method);
@@ -143,7 +144,10 @@ public class SLReflection {
                     }
                 }
             }
-            if (filteredMethods.size() == 0) throw new NoSuchMethodException();
+            if (filteredMethods.size() == 0){
+                blackList.add(Pair.create(clazz,name));
+                throw new NoSuchMethodException();
+            }
             Method[] _methods = new Method[filteredMethods.size()];
             cachedMethods.put(Pair.create(finalClazz, name), filteredMethods.toArray(_methods));
             return Pair.create(filteredMethods.toArray(_methods), finalClazz);
@@ -227,11 +231,11 @@ public class SLReflection {
                 met+="((" + this.classStringPair.getLeft().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + ");" +
                         "return null; }";
             }else {
-                met+="return " + (foundMethod.getReturnType().isPrimitive() ? boxingOperation.get(foundMethod.getReturnType().getName()) : "") + "(((" + this.classStringPair.getLeft().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + ")); }";
+                met+="return " + (foundMethod.getReturnType().isPrimitive() ? boxingOperation.get(foundMethod.getReturnType().getName()) : "") + "(((" + foundMethod.getDeclaringClass().getName() + ")instance)." + foundMethod.getName() + "(" + arguments.toString() + ")); }";
             }
             ClassPool cp = ClassPool.getDefault();
             cp.appendClassPath(new LoaderClassPath(this.getClass().getClassLoader()));
-            CtClass cc = cp.makeClass(this.classStringPair.getLeft().getName() +"$CallTarget$"+ foundMethod.getName() + foundMethod.hashCode());
+            CtClass cc = cp.makeClass("CallTarget$"+ foundMethod.getName() + foundMethod.hashCode());
             cc.setInterfaces(new CtClass[]{cp.get("com.github.wooyme.nmsl.runtime.Callable")});
             SignatureAttribute.ClassSignature cs = new SignatureAttribute.ClassSignature(null, null,
                     new SignatureAttribute.ClassType[]{new SignatureAttribute.ClassType("com.github.wooyme.nmsl.runtime.Callable")});
@@ -339,8 +343,13 @@ public class SLReflection {
             try {
                 return new SLReflectionMethod(this, name);
             } catch (NoSuchMethodException ex) {
-                if (readOp == null) throw new NoSuchMethodException();
-                return library.execute(readOp.executeGeneric(frame), this, name);
+                try{
+                    String namedName = name.substring(0,1).toUpperCase()+name.substring(1);
+                    return new SLReflectionMethod(this,"get"+namedName).invoke(new Object[0]);
+                }catch (NoSuchMethodException | InvocationTargetException | IllegalAccessException exx) {
+                    if (readOp == null) throw new NoSuchMethodException();
+                    return library.execute(readOp.executeGeneric(frame), this, name);
+                }
             }
         }
     }
