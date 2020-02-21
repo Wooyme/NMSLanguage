@@ -2150,7 +2150,7 @@ public class SimpleLanguageParser extends Parser {
 			case 10:
 				{
 				setState(439);
-				match(T__13);
+				match(T__10);
 				setState(440);
 				((Member_expressionContext)_localctx).IDENTIFIER = match(IDENTIFIER);
 				  if (receiver == null) {
@@ -2344,7 +2344,7 @@ public class SimpleLanguageParser extends Parser {
 		"\5\24\13\2\u01af\u01b0\b\22\1\2\u01b0\u01b1\7\'\2\2\u01b1\u01bd\3\2\2"+
 		"\2\u01b2\u01b3\7.\2\2\u01b3\u01b4\b\22\1\2\u01b4\u01b5\5\24\13\2\u01b5"+
 		"\u01b6\b\22\1\2\u01b6\u01b7\3\2\2\2\u01b7\u01b8\b\22\1\2\u01b8\u01bd\3"+
-		"\2\2\2\u01b9\u01ba\7\20\2\2\u01ba\u01bb\7.\2\2\u01bb\u01bd\b\22\1\2\u01bc"+
+		"\2\2\2\u01b9\u01ba\7\r\2\2\u01ba\u01bb\7.\2\2\u01bb\u01bd\b\22\1\2\u01bc"+
 		"\u0179\3\2\2\2\u01bc\u018a\3\2\2\2\u01bc\u018e\3\2\2\2\u01bc\u0192\3\2"+
 		"\2\2\u01bc\u0195\3\2\2\2\u01bc\u019c\3\2\2\2\u01bc\u01a2\3\2\2\2\u01bc"+
 		"\u01ac\3\2\2\2\u01bc\u01b2\3\2\2\2\u01bc\u01b9\3\2\2\2\u01bd\u01c1\3\2"+

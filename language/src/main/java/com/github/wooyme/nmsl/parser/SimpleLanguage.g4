@@ -496,7 +496,7 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                   $result = factory.createCall($result,receiver, parameters, null);
                                                 }
 |
-    '->'
+    ':'
     IDENTIFIER                                 {  if (receiver == null) {
                                                      receiver = factory.createRead(assignmentName);
                                                   }

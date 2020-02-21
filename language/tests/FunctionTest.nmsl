@@ -18,7 +18,7 @@ fn main(){
     println(m.a().b());
     println("--------");
 
-    println(1->plus1->plus1 plus 2->plus1);
+    println(1:plus1:plus1 plus 2:plus1);
 }
 
 fn plus(x,y){

@@ -218,7 +218,11 @@ public class SLReflection {
                     arguments.append("((").append(boxing.get(paramTypes[i].getName())).append(")").append("args[").append(i).append("]).").append(unboxingOperation.get(paramTypes[i].getName())).append(",");
                 }else {
                     if(paramTypes[i].getName().equals("java.lang.Object")){
-                        arguments.append("(").append(args[i].getClass().getName()).append(")").append("args[").append(i).append("],");
+                        if(args[i].getClass().getName().startsWith("com.sun.proxy.$Proxy")){
+                            arguments.append("(").append(args[i].getClass().getInterfaces()[0].getName()).append(")").append("args[").append(i).append("],");
+                        }else {
+                            arguments.append("(").append(args[i].getClass().getName()).append(")").append("args[").append(i).append("],");
+                        }
                     } else {
                         arguments.append("(").append(paramTypes[i].getName()).append(")").append("args[").append(i).append("],");
                     }

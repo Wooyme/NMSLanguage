@@ -1,16 +1,13 @@
 pq = import "java.util.PriorityQueue";
+Comp = import "java.lang.Comparable";
 fn main(){
     a = {value:1000};
     b = {value:100};
-    a.compareTo = {this,other: return toInt(this.value-other.value); };
-    b.compareTo = {this,other: return toInt(this.value-other.value); };
-    a1 = link(a,"java.lang.Comparable");
-    b1 = link(b,"java.lang.Comparable");
+    a.compareTo = {this,other: return to(this.value-other.value,"int"); };
+    b.compareTo = {this,other: return to(this.value-other.value,"int"); };
     q = pq();
-    q.add(a1);
-    q.add(b1);
+    q.add(a->Comp);
+    q.add(b->Comp);
     print(fr(q.poll()).value+"\n");
     print(fr(q.poll()).value+"\n");
-    unlink(a1);
-    unlink(b1);
 }

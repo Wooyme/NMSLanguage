@@ -25,7 +25,7 @@ fn main(){
         }else{
             println(ar.cause().getMessage());
         }
-    }} Handler).listen(8080 to "int");
+    }}->Handler).listen(8080 to "int");
     while(!stop.stop){
         sleep(1000);
     }
