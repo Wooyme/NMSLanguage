@@ -38,10 +38,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-package com.github.wooyme.nmsl.builtins;
+package com.github.wooyme.nmsl.builtins.io;
 
 import com.github.wooyme.nmsl.SLException;
 import com.github.wooyme.nmsl.SLLanguage;
+import com.github.wooyme.nmsl.builtins.SLBuiltinNode;
 import com.github.wooyme.nmsl.runtime.SLContext;
 import com.github.wooyme.nmsl.runtime.SLNull;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -63,10 +64,10 @@ public abstract class SLReadlnBuiltin extends SLBuiltinNode {
     public Object readln(Object fh,@CachedContext(SLLanguage.class) SLContext context) {
 
         Object result = null;
-        if(fh!=null)
-            if(fh instanceof BufferedReader)
-                result= doRead((BufferedReader) fh);
-        else
+        if(fh!=null) {
+            if (fh instanceof BufferedReader)
+                result = doRead((BufferedReader) fh);
+        }else
             result = doRead(context.getInput());
         if (result == null) {
             /*

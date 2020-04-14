@@ -98,7 +98,7 @@ public abstract class SLPrintBuiltin extends SLBuiltinNode {
     }
 
     @Specialization
-    public Object println(Object value, @CachedContext(SLLanguage.class) SLContext context) {
+    public Object print(Object value, @CachedContext(SLLanguage.class) SLContext context) {
         doPrint(context.getOutput(), value);
         return value;
     }

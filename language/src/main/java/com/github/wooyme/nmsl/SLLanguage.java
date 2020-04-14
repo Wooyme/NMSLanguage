@@ -41,6 +41,7 @@
 package com.github.wooyme.nmsl;
 
 import com.github.wooyme.nmsl.builtins.*;
+import com.github.wooyme.nmsl.builtins.io.SLReadlnBuiltin;
 import com.github.wooyme.nmsl.nodes.SLEvalRootNode;
 import com.github.wooyme.nmsl.nodes.SLTypes;
 import com.github.wooyme.nmsl.nodes.controlflow.*;
@@ -68,6 +69,8 @@ import com.oracle.truffle.api.object.DynamicObject;
 import com.oracle.truffle.api.source.Source;
 import com.oracle.truffle.api.source.SourceSection;
 
+import java.io.Reader;
+import java.io.Writer;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -176,7 +179,10 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
             return new SLBigNumber((BigDecimal) any);
         }else if(any instanceof Array){
             return new LinkedList<>(Arrays.asList((Object[]) any));
-        }else if( SLProxy.getRaw(any)!=null || any instanceof String || any instanceof List || any instanceof Boolean || any instanceof TruffleObject || any instanceof SLObjectType || any instanceof SLReflection){
+        }else if( SLProxy.getRaw(any)!=null || any instanceof String
+                || any instanceof List || any instanceof Boolean
+                || any instanceof TruffleObject
+                || any instanceof SLObjectType || any instanceof SLReflection || any instanceof Reader || any instanceof Writer){
             return any;
         }else{
             return new SLReflection(any);
@@ -201,7 +207,7 @@ public final class SLLanguage extends TruffleLanguage<SLContext> {
         } else {
             Source requestedSource = request.getSource();
             StringBuilder sb = new StringBuilder();
-            sb.append("function main(");
+            sb.append("fn main(");
             String sep = "";
             for (String argumentName : request.getArgumentNames()) {
                 sb.append(sep);

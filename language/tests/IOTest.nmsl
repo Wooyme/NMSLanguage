@@ -1,0 +1,10 @@
+fn main(){
+    ls = open("shell://ls -l","<");
+    fh = open("file://save.txt",">>+");
+    line = ls:readln;
+    while(line!=null){
+        fh write line+"\n";
+        line = ls:readln;
+    }
+    fh:close;
+}

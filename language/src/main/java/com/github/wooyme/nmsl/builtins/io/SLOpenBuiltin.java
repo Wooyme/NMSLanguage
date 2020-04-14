@@ -1,6 +1,7 @@
-package com.github.wooyme.nmsl.builtins;
+package com.github.wooyme.nmsl.builtins.io;
 
 import com.github.wooyme.nmsl.SLLanguage;
+import com.github.wooyme.nmsl.builtins.SLBuiltinNode;
 import com.github.wooyme.nmsl.runtime.SLContext;
 import com.github.wooyme.nmsl.runtime.SLNull;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
@@ -25,9 +26,11 @@ public abstract class SLOpenBuiltin extends SLBuiltinNode {
         Object result = null;
         switch (op) {
             case "<":
-                if (path.startsWith("file:") || path.startsWith("http:") || path.startsWith("https:"))
+                if (path.startsWith("file:"))
+                    result = getFileReader(path);
+                else if(path.startsWith("http:") || path.startsWith("https:"))
                     result = getReaderCommon(path);
-                if (path.startsWith("shell:"))
+                else if (path.startsWith("shell:"))
                     result = getShell(path);
                 break;
             case ">":
@@ -70,23 +73,33 @@ public abstract class SLOpenBuiltin extends SLBuiltinNode {
         }
     }
 
+    private Object getFileReader(String path){
+        String filename = path.substring(7);
+        try {
+            return new BufferedReader(new FileReader(filename));
+        } catch (IOException e) {
+            return SLNull.SINGLETON;
+        }
+    }
+
     @TruffleBoundary
     private Object getFileWriter(String path, boolean isAppend, boolean create) {
+        String filename = path.substring(7);
         try {
-            File file = new File(new URL(path).getFile());
+            File file = new File(filename);
             if (create && !file.exists()) {
                 if (!file.createNewFile()) {
                     return SLNull.SINGLETON;
                 }
             }
-            return new BufferedWriter(new FileWriter(new URL(path).getFile(), isAppend));
+            return new BufferedWriter(new FileWriter(file, isAppend));
         } catch (IOException e) {
             return SLNull.SINGLETON;
         }
     }
 
     private Object getShell(String path) {
-        String cmd = path.substring(6);
+        String cmd = path.substring(8);
         try {
             final Process p = Runtime.getRuntime().exec(cmd);
             BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));

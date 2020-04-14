@@ -426,6 +426,12 @@ public class SLNodeFactory {
 
         final SLExpressionNode result;
         switch (opToken.getText()) {
+            case "^":
+                result = SLPowerNodeGen.create(leftUnboxed,rightUnboxed);
+                break;
+            case "%":
+                result = SLModNodeGen.create(leftUnboxed, rightUnboxed);
+                break;
             case "+":
                 result = SLAddNodeGen.create(leftUnboxed, rightUnboxed);
                 break;
@@ -498,6 +504,9 @@ public class SLNodeFactory {
         if(finalToken!=null) {
             final int endPos = finalToken.getStartIndex() + finalToken.getText().length();
             result.setSourceSection(startPos, endPos - startPos);
+        }else{
+            final int length = functionNode.getSourceLength();
+            result.setSourceSection(startPos, length);
         }
         result.addExpressionTag();
 

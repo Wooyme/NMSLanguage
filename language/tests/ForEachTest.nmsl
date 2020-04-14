@@ -1,6 +1,8 @@
 fn main(){
-    a = [0,1,2,3,4,5];
-    a forEach { v:
-        print(v);
+    a = {a:1,b:2};
+    a forEach { k,v:
+        println(k+":"+v);
     };
+    b = [10,9,8,7,6,5,4,3,2,1];
+    b forEach {v,i: println(v+i);};
 }

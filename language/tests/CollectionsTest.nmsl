@@ -1,0 +1,12 @@
+fn main(){
+        a = {a:1,b:2,c:3};
+        a grep {k,v-> return v>0; } map { k,v-> return {key:k,value:v}; } sort {v-> return v.value; } forEach { v-> println(v.key+":"+v.value); };
+        b = [10,11,5,9,8,6,3,12,1,2];
+        b map {v,i-> return v-i; } grep {v-> return v<10; } sort {v-> return v;} forEach {v-> println(v); };
+        c = [1,2,3];
+        (c map x) forEach println;
+}
+
+fn x(v){
+    return v+1;
+}

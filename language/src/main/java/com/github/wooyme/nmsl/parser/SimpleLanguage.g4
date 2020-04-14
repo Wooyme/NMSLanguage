@@ -160,7 +160,7 @@ s='{'                                           { HashMap<String,Object> oldEnv 
         IDENTIFIER                              { factory.addFormalParameter($IDENTIFIER); }
     )*
 )?
-m=':'                                           { factory.startBlock();
+m='->'                                           { factory.startBlock();
                                                   List<SLStatementNode> body = new ArrayList<>(); }
 (
     statement[false]                            { body.add($statement.result); }
@@ -265,8 +265,21 @@ r='return'                                      { SLExpressionNode value = null;
 ';'
 ;
 
-
 expression returns [SLExpressionNode result]
+:
+middle_term                                      { $result = $middle_term.result; }
+(
+    op=IDENTIFIER
+    middle_term                                  {
+                                                    nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
+                                                    func = factory.createRead(nestedAssignmentName);
+                                                    List<SLExpressionNode> parameters = new ArrayList<>();
+                                                    parameters.add($middle_term.result);
+                                                    $result = factory.createCall(func,$result, parameters, null);
+                                                }
+)*
+;
+middle_term returns [SLExpressionNode result]
 :
 logic_term                                      { $result = $logic_term.result; }
 (
@@ -310,7 +323,7 @@ term returns [SLExpressionNode result]
 :
 single_factor                                         { $result = $single_factor.result; }
 (
-    op=('*' | '/')
+    op=('*' | '/'|'^'|'%')
     single_factor                                     { $result = factory.createBinary($op, $result, $single_factor.result); }
 )*
 ;
@@ -481,20 +494,6 @@ member_expression [SLExpressionNode r, SLExpressionNode assignmentReceiver, SLEx
                                                   $result = factory.createRemove(receiver,$expression.result);
                                                 }
     ']'
-|
-    IDENTIFIER                                  { if (receiver == null) {
-                                                    receiver = factory.createRead(assignmentName);
-
-                                                  }
-                                                  nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
-                                                  $result = factory.createRead(nestedAssignmentName);
-                                                  List<SLExpressionNode> parameters = new ArrayList<>();
-                                                }
-    (expr=expression                            { parameters.add($expr.result); }
-    )
-                                                {
-                                                  $result = factory.createCall($result,receiver, parameters, null);
-                                                }
 |
     ':'
     IDENTIFIER                                 {  if (receiver == null) {

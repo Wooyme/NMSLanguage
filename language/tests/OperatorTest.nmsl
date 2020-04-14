@@ -1,0 +1,5 @@
+fn main(){
+    a = 10;
+    b = 0.5;
+    (a^b):println;
+}

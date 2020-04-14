@@ -43,6 +43,7 @@ package com.github.wooyme.nmsl.nodes.expression;
 import com.github.wooyme.nmsl.SLException;
 import com.github.wooyme.nmsl.nodes.SLBinaryNode;
 import com.github.wooyme.nmsl.runtime.SLBigNumber;
+import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
@@ -60,7 +61,7 @@ public abstract class SLMulNode extends SLBinaryNode {
     }
 
     @Specialization
-    @TruffleBoundary
+    @CompilerDirectives.TruffleBoundary
     protected SLBigNumber mul(SLBigNumber left, SLBigNumber right) {
         return new SLBigNumber(left.getValue().multiply(right.getValue()));
     }

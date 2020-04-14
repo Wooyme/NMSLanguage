@@ -15,21 +15,42 @@ public abstract class SLToNode extends SLBuiltinNode {
         try {
             switch (type){
                 case "int":
+                    if(value instanceof String){
+                        return Integer.valueOf((String) value);
+                    }
                     return values.asInt(value);
                 case "long":
+                    if(value instanceof String){
+                        return Long.valueOf((String) value);
+                    }
                     return values.asLong(value);
                 case "double":
+                    if(value instanceof String){
+                        return Double.valueOf((String) value);
+                    }
                     return values.asDouble(value);
                 case "short":
+                    if(value instanceof String){
+                        return Short.valueOf((String) value);
+                    }
                     return values.asShort(value);
                 case "float":
+                    if(value instanceof String){
+                        return Float.valueOf((String) value);
+                    }
                     return values.asFloat(value);
                 case "boolean":
+                    if(value instanceof String){
+                        return Boolean.valueOf((String) value);
+                    }
                     return values.asBoolean(value);
                 case "byte":
+                    if(value instanceof String){
+                        return Byte.parseByte((String)value);
+                    }
                     return values.asByte(value);
                 default:
-                    return SLNull.SINGLETON;
+                    throw new SLException("Wrong type "+type,this);
 
             }
         } catch (UnsupportedMessageException e) {

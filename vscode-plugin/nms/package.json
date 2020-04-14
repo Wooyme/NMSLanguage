@@ -1,0 +1,26 @@
+{
+    "name": "nms",
+    "displayName": "nms",
+    "publisher": "wooyme",
+    "description": "native mind specialize language",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.44.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "nms",
+            "aliases": ["native mind specialize language", "nms"],
+            "extensions": ["nms"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "nms",
+            "scopeName": "source.nmsl",
+            "path": "./syntaxes/nms.tmLanguage.json"
+        }]
+    }
+}

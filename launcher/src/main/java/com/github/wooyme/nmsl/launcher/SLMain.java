@@ -47,6 +47,8 @@ import org.graalvm.polyglot.Value;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 public final class SLMain {
@@ -60,6 +62,7 @@ public final class SLMain {
         Source builtin;
         Source source;
         Map<String, String> options = new HashMap<>();
+        List<String> arguments = new LinkedList<>();
         String file = null;
         for (String arg : args) {
             if (parseOption(options, arg)) {
@@ -67,6 +70,8 @@ public final class SLMain {
             } else {
                 if (file == null) {
                     file = arg;
+                }else{
+                    arguments.add(arg);
                 }
             }
         }
@@ -79,14 +84,16 @@ public final class SLMain {
             source = Source.newBuilder(SL, new File(file)).build();
         }
 
-        System.exit(executeSource(source,builtin, System.in, System.out, options));
+        System.exit(executeSource(source,builtin, System.in, System.out,arguments, options));
     }
 
-    private static int executeSource(Source source,Source builtin, InputStream in, PrintStream out, Map<String, String> options) {
+    private static int executeSource(Source source,Source builtin, InputStream in, PrintStream out,List<String> arguments ,Map<String, String> options) {
         Context context;
         PrintStream err = System.err;
         try {
-            context = Context.newBuilder(SL).in(in).out(out).options(options).build();
+            String[] args = new String[arguments.size()];
+            arguments.toArray(args);
+            context = Context.newBuilder(SL).in(in).out(out).options(options).arguments(SL,args).build();
         } catch (IllegalArgumentException e) {
             err.println(e.getMessage());
             return 1;

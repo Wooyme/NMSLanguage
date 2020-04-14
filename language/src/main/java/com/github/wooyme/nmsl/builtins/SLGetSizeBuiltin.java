@@ -53,7 +53,7 @@ import java.util.List;
  * Built-in function that queries the size property of a foreign object. See
  * <link>Messages.GET_SIZE</link>.
  */
-@NodeInfo(shortName = "getSize")
+@NodeInfo(shortName = "len")
 public abstract class SLGetSizeBuiltin extends SLBuiltinNode {
 
     @Specialization(limit = "3")
@@ -66,6 +66,7 @@ public abstract class SLGetSizeBuiltin extends SLBuiltinNode {
         try {
             return arrays.getArraySize(obj);
         } catch (UnsupportedMessageException e) {
+
             throw new SLException("Element is not a valid array.", this);
         }
     }

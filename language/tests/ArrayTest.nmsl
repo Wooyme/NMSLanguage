@@ -1,7 +1,7 @@
 fn main(){
     a = [0,1];
     a[..getSize(a)] = 1;
-    x = a[-(0)];
+    x = a[- 0];
     b = a[0:2];
     println(b);
     a forEach {v: println(v);};

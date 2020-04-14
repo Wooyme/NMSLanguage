@@ -1,0 +1,70 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "native mind specialize language",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include":"#functions"
+		},
+		{
+			"include":"#parameters"
+		},
+		{
+			"include":"#lambda-parameters"
+		},
+		{
+			"include":"#object-variables"
+		}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.nms",
+				"match": "\\b(if|else|while|break|continue|return|import|load|fn|new|to|null)\\b"
+			}]
+		},
+		"functions":{
+			"patterns":[{
+				"name": "support.function.nms",
+				"match":"\\b(forEach|map|grep|sort|len|fr|link|members|sleep|unlink)\\b"
+			}]
+		},
+		"parameters":{
+			"begin":"\\(",
+			"end":"\\)",
+			"patterns":[{
+				"name":"variable.parameter.nms",
+				"match":"([A-Za-z_$])([A-Za-z0-9_$]+)"
+			}]
+		},
+		"lambda-parameters":{
+			"patterns":[{
+				"name":"variable.parameter.nms",
+				"match":"(([A-Za-z_$])([A-Za-z0-9_$]+)?(,)?(\\s+)?)+(->)"
+			}]
+		},
+		"object-variables":{
+			"patterns":[{
+				"name":"variable.parameter.nms",
+				"match":"([A-Za-z_$])([A-Za-z0-9_$]+)?(\\s+)?(:)"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.nms",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.nms",
+					"match": "\\\\."
+				}
+			]
+		}
+	},
+	"scopeName": "source.nmsl"
+}

@@ -110,7 +110,8 @@ public final class SLEvalRootNode extends RootNode {
             return SLNull.SINGLETON;
         } else {
             /* Conversion of arguments to types understood by SL. */
-            Object[] arguments = frame.getArguments();
+
+            Object[] arguments = reference.get().getEnv().getApplicationArguments();
             for (int i = 0; i < arguments.length; i++) {
                 arguments[i] = SLContext.fromForeignValue(arguments[i]);
             }

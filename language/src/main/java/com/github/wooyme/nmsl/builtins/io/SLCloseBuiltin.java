@@ -1,6 +1,7 @@
-package com.github.wooyme.nmsl.builtins;
+package com.github.wooyme.nmsl.builtins.io;
 
 import com.github.wooyme.nmsl.SLLanguage;
+import com.github.wooyme.nmsl.builtins.SLBuiltinNode;
 import com.github.wooyme.nmsl.runtime.SLContext;
 import com.oracle.truffle.api.dsl.CachedContext;
 import com.oracle.truffle.api.dsl.Specialization;
