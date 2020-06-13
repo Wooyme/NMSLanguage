@@ -1,8 +1,0 @@
-fn main(){
-    a = {a:1,b:2};
-    a forEach { k,v:
-        println(k+":"+v);
-    };
-    b = [10,9,8,7,6,5,4,3,2,1];
-    b forEach {v,i: println(v+i);};
-}
