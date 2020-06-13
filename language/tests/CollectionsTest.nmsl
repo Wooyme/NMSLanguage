@@ -4,9 +4,9 @@ fn main(){
         b = [10,11,5,9,8,6,3,12,1,2];
         b map {v,i-> return v-i; } grep {v-> return v<10; } sort {v-> return v;} forEach {v-> println(v); };
         c = [1,2,3];
-        (c map x) forEach println;
+        c map x forEach println;
 }
 
 fn x(v){
-    return v+1;
+    return v*2;
 }

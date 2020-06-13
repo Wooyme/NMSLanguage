@@ -159,7 +159,7 @@ public class SLNodeFactory {
         array[0]='$';
         String name = new String(array, Charset.forName("UTF-8")).replace("\\","$");
         while(anonymousFunctions.contains(name)){
-            name = new String(array, Charset.forName("UTF-8"));
+            name = new String(array, Charset.forName("UTF-8")).replace("\\","$");
         }
         return startLabelLambda(bodyStartToken,name);
     }

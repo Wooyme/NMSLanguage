@@ -46,9 +46,14 @@ public abstract class SLToNode extends SLBuiltinNode {
                     return values.asBoolean(value);
                 case "byte":
                     if(value instanceof String){
-                        return Byte.parseByte((String)value);
+                        if(((String) value).length()==1){
+                            return (int)((String) value).getBytes()[0];
+                        }else
+                            return (int)Byte.parseByte((String)value);
                     }
                     return values.asByte(value);
+                case "string":
+                    return String.valueOf(value);
                 default:
                     throw new SLException("Wrong type "+type,this);
 

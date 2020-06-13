@@ -81,6 +81,12 @@ public interface SimpleLanguageVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitExpression(SimpleLanguageParser.ExpressionContext ctx);
 	/**
+	 * Visit a parse tree produced by {@link SimpleLanguageParser#middle_term}.
+	 * @param ctx the parse tree
+	 * @return the visitor result
+	 */
+	T visitMiddle_term(SimpleLanguageParser.Middle_termContext ctx);
+	/**
 	 * Visit a parse tree produced by {@link SimpleLanguageParser#logic_term}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

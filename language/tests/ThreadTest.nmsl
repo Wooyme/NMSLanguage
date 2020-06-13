@@ -1,11 +1,12 @@
 Thread = import "java.lang.Thread";
+Runnable = import "java.lang.Runnable";
 fn main(){
     runnable = {};
-    runnable.run = {this:
+    runnable.run = { this ->
         Thread.sleep(500);
         print("Hello!");
     };
-    r = link(runnable,"java.lang.Runnable");
+    r = Runnable(runnable);
     thread = Thread(r);
     thread.start();
     print("World!");

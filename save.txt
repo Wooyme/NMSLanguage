@@ -1,0 +1,16 @@
+总用量 68
+drwxr-xr-x 2 wooyme wooyme 4096 4月  15 15:06 component
+-rw-r--r-- 1 wooyme wooyme  190 11月  4  2019 CONTRIBUTING.md
+-rwxr-xr-x 1 wooyme wooyme  250 11月  4  2019 generate_parser
+drwxr-xr-x 7 wooyme wooyme 4096 2月  23 18:04 language
+drwxr-xr-x 4 wooyme wooyme 4096 11月 30 15:13 launcher
+drwxrwxr-x 2 wooyme wooyme 4096 11月 30 15:40 libs
+-rw-r--r-- 1 wooyme wooyme 1867 11月  4  2019 LICENSE.md
+drwxr-xr-x 2 wooyme wooyme 4096 11月 28 12:41 native
+-rwxrwxr-x 1 wooyme wooyme 4615 2月  21 22:46 nmsl
+-rw-rw-r-- 1 wooyme wooyme  781 11月 28 12:41 pom.xml
+-rw-r--r-- 1 wooyme wooyme 6170 11月 22 00:03 README.md
+-rw-rw-r-- 1 wooyme wooyme  574 11月  4  2019 simplelanguage-parent.iml
+drwxr-xr-x 4 wooyme wooyme 4096 2月   9 17:21 tests
+drwxr-xr-x 4 wooyme wooyme 4096 4月  13 14:29 vscode-plugin
+drwxrwxr-x 4 wooyme wooyme 4096 11月 27 23:34 windows

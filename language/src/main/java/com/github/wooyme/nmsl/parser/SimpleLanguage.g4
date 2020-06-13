@@ -271,8 +271,8 @@ middle_term                                      { $result = $middle_term.result
 (
     op=IDENTIFIER
     middle_term                                  {
-                                                    nestedAssignmentName = factory.createStringLiteral($IDENTIFIER, false);
-                                                    func = factory.createRead(nestedAssignmentName);
+                                                    SLExpressionNode nestedAssignmentName = factory.createStringLiteral($op, false);
+                                                    SLExpressionNode func = factory.createRead(nestedAssignmentName);
                                                     List<SLExpressionNode> parameters = new ArrayList<>();
                                                     parameters.add($middle_term.result);
                                                     $result = factory.createCall(func,$result, parameters, null);

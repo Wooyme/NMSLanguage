@@ -47,6 +47,9 @@ import com.github.wooyme.nmsl.builtins.collections.SLForEachBuiltinFactory;
 import com.github.wooyme.nmsl.builtins.collections.SLMapBuiltinFactory;
 import com.github.wooyme.nmsl.builtins.collections.SLSortBuiltinFactory;
 import com.github.wooyme.nmsl.builtins.io.*;
+import com.github.wooyme.nmsl.builtins.math.SLCosBuiltinFactory;
+import com.github.wooyme.nmsl.builtins.math.SLSinBuiltinFactory;
+import com.github.wooyme.nmsl.builtins.math.SLTanBuiltinFactory;
 import com.github.wooyme.nmsl.nodes.SLExpressionNode;
 import com.github.wooyme.nmsl.nodes.SLRootNode;
 import com.github.wooyme.nmsl.nodes.local.SLReadArgumentNode;
@@ -164,11 +167,15 @@ public final class SLContext {
         installBuiltin(SLReadBuiltinFactory.getInstance());
         installBuiltin(SLSleepBuiltinFactory.getInstance());
         installBuiltin(SLInterfaceBuiltinFactory.getInstance());
+        installBuiltin(SLFromProxyBuiltinFactory.getInstance());
         installBuiltin(SLToNodeFactory.getInstance());
         installBuiltin(SLForEachBuiltinFactory.getInstance());
         installBuiltin(SLMapBuiltinFactory.getInstance());
         installBuiltin(SLFilterBuiltinFactory.getInstance());
         installBuiltin(SLSortBuiltinFactory.getInstance());
+        installBuiltin(SLSinBuiltinFactory.getInstance());
+        installBuiltin(SLCosBuiltinFactory.getInstance());
+        installBuiltin(SLTanBuiltinFactory.getInstance());
     }
 
     public void installBuiltin(NodeFactory<? extends SLBuiltinNode> factory) {

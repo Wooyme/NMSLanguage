@@ -1,7 +1,7 @@
 fn main(){
     a = 1;
     b = {x:1,y:2};
-    c = {:
+    c = {->
       println(a);
       println(b.x+b.y);
       a = 2;
@@ -10,14 +10,15 @@ fn main(){
     c();
     println(a);
     println(b.x);
-    m = {a:{:
+    m = {a:{->
         println("a");
-        return {b:{:return 2;}};
+        return {b:{->
+            return 2;
+           }
+        };
       }
     };
     println(m.a().b());
-    println("--------");
-
     println(1:plus1:plus1 plus 2:plus1);
 }
 

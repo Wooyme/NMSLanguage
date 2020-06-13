@@ -1,13 +1,17 @@
 pq = import "java.util.PriorityQueue";
+map = import "java.util.HashMap";
 Comp = import "java.lang.Comparable";
 fn main(){
     a = {value:1000};
     b = {value:100};
-    a.compareTo = {this,other: return to(this.value-other.value,"int"); };
-    b.compareTo = {this,other: return to(this.value-other.value,"int"); };
+    a.compareTo = {this,other-> return to(this.value-other.value,"int"); };
+    b.compareTo = {this,other-> return to(this.value-other.value,"int"); };
     q = pq();
-    q.add(a->Comp);
-    q.add(b->Comp);
+    q.add(Comp(a));
+    q.add(Comp(b));
     print(fr(q.poll()).value+"\n");
     print(fr(q.poll()).value+"\n");
+    m = map();
+    m.put("Hello",["A"]);
+    println(m.get("Hello")[0]);
 }

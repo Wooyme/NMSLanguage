@@ -118,6 +118,16 @@ public interface SimpleLanguageListener extends ParseTreeListener {
 	 */
 	void exitExpression(SimpleLanguageParser.ExpressionContext ctx);
 	/**
+	 * Enter a parse tree produced by {@link SimpleLanguageParser#middle_term}.
+	 * @param ctx the parse tree
+	 */
+	void enterMiddle_term(SimpleLanguageParser.Middle_termContext ctx);
+	/**
+	 * Exit a parse tree produced by {@link SimpleLanguageParser#middle_term}.
+	 * @param ctx the parse tree
+	 */
+	void exitMiddle_term(SimpleLanguageParser.Middle_termContext ctx);
+	/**
 	 * Enter a parse tree produced by {@link SimpleLanguageParser#logic_term}.
 	 * @param ctx the parse tree
 	 */

@@ -146,6 +146,18 @@ public class SimpleLanguageBaseListener implements SimpleLanguageListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
+	@Override public void enterMiddle_term(SimpleLanguageParser.Middle_termContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
+	@Override public void exitMiddle_term(SimpleLanguageParser.Middle_termContext ctx) { }
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>The default implementation does nothing.</p>
+	 */
 	@Override public void enterLogic_term(SimpleLanguageParser.Logic_termContext ctx) { }
 	/**
 	 * {@inheritDoc}
